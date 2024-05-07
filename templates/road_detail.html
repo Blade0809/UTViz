@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>路口详情</title>
+    <link rel="stylesheet" href="../static/css/style1.css">
+    <!-- 平行坐标图的默认视觉样式 -->
+    <link rel="stylesheet" type="text/css" href="../static/css/d3.parcoords.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css">
+    <script type="text/javascript" src="../static/js/jquery.js"></script>
+    <script type="text/javascript" src="../static/js/echarts.min.js"></script>
+    <script type="text/javascript" src="../static/js/Bubble.js"></script>
+    <link rel="stylesheet" href="../static/css/common.css" >
+     <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <!-- 引入d3.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.133.0/build/three.min.js"></script>
+    <script src="../static/lib/d3.js"></script>
+    <!-- 引入d3的多笔刷选择模块 -->
+    <script src="../static/lib/d3.svg.multibrush.js"></script>
+    <!-- 引入d3的平行坐标模块 -->
+    <script src="../static/js/d3.parcoords.js"></script>
+
+
+
+    <style>
+    .ring {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #00e1ff;
+        border-radius: 50%;
+        position: relative;
+        animation: glow 2s linear infinite;
+    }
+    .hot-display-license-info {
+        display: none;
+    }
+    @keyframes glow {
+        0% {
+            box-shadow: 0 0 10px #00ffc4, 0 0 20px #00ffc4, 0 0 30px #00ffc4;
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(5,118,254,1), 0 0 30px rgba(5,118,254,1), 0 0 40px rgba(5,118,254,1);
+        }
+        100% {
+            box-shadow: 0 0 30px #07467e, 0 0 40px #07467e, 0 0 50px #07467e;
+        }
+    }
+ /* 修改表头的背景颜色和文字颜色 */
+.handsontable th {
+    background-color: #130834;
+
+    color: #ffffff;
+}
+
+/* 修改单元格的背景颜色和文字颜色 */
+.handsontable td {
+    background-color: #130834;
+    color: rgba(37, 234, 227, 0.82);
+
+}
+/* 修改表格的边框颜色 */
+.handsontable {
+    border: 1px solid #0cc5ee; /* 设置表格的边框为红色 */
+}
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;/* 设置滚动条宽度 */
+}
+
+::-webkit-scrollbar-track {
+    background: #dcdada; /* 设置滚动条背景颜色 */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #70c8ff; /* 设置滚动条滑块颜色为淡蓝色 */
+}
+.hot-display-license-info {
+    display: none;
+}
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    padding-top: 50px;
+    left: 100px;
+    top: 50px;
+    width: 20%;
+    height: 40%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.9);
+}
+
+.modal-content {
+     z-index: 10000;
+    margin: auto;
+    display: block;
+    width: 90%;
+    max-width: 800px;
+}
+
+.close {
+    color: white;
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+     z-index: 10001;
+}
+</style>
+</head>
+<body>
+<div>
+    <div class="head clearfix">
+
+      <div class="menu menu2 pulll_left"  >
+      <ul style="position: absolute;top: 25px;left: 0px;">
+       <li><a  href="{{ url_for('road_sum') }}">路口概况</a></li>
+        <li><a href="{{ url_for('road_detail') }}">路口详情</a></li>
+        <li><a href="{{ url_for('road_board') }}">路口管理与说明</a></li>
+      </ul>
+
+        <div class="time" id="showTime" style="width: 200px;position: absolute;top: 15px;right: 70px;font-size: large">2018/6/12 17:00:12</div>
+		<script>
+        var t = null;
+            t = setTimeout(time,1000);//開始运行
+            function time()
+            {
+               clearTimeout(t);//清除定时器
+               dt = new Date();
+                var y=dt.getFullYear();
+                var mt=dt.getMonth()+1;
+                var day=dt.getDate();
+               var h=dt.getHours();//获取时
+               var m=dt.getMinutes();//获取分
+               var s=dt.getSeconds();//获取秒
+               document.getElementById("showTime").innerHTML = y+"/"+mt+"/"+day+" "+h+":"+m+":"+s+"";
+               t = setTimeout(time,1000); //设定定时器，循环运行
+            }
+        </script>
+    </div>
+        <img src="../static/images/top.png" style="width: 100%;height:75px;">
+        <h1 class="pulll_left" style="position: absolute;top: -10px;font-size: 30px">城市路口交通态势可视化系统</h1>
+        <div class="ring" style="position: absolute;right: 20px;top: 30px"></div>
+        </div>
+      <!--整体块-->
+      <div class="mainbox">
+        <!--左上部分-->
+        <div class="boxnav" style="border: none">
+        <ul class="clearfix nav1" style="margin: 5px">
+          <li style="width: 24%;">
+            <!--控制台-->
+            <div class="new-border">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">控制台</div>
+              <div class="boxnav" style="height: 260px;font-size: 20px">
+                   <label style="display:inline;font-size: 20px;font-weight: normal;position: absolute;top: 70px;left: 20px">选择路口:</label>
+              <select id="juc_data" style="font-size: 20px;width: 60%;position: absolute;top: 75px;left: 120px">
+                <option disabled value="">-请选择-</option>
+                <option value="1">路口1</option>
+                  <option value="2">路口2</option>
+                  <option value="3">路口3</option>
+                  <option value="4">路口4</option>
+                  <option value="5">路口5</option>
+                  <option value="6">路口6</option>
+                  <option value="7">路口7</option>
+                  <option value="8">路口8</option>
+              </select>
+                <br>
+                     <label style="font-size: 20px;font-weight: normal;position: absolute;top: 110px;left: 20px">选择时间:</label>
+              <select id="time_data" style="font-size: 20px;width: 60%;position: absolute;top: 115px;left: 120px">
+                <option disabled value="">-请选择-</option>
+                <option value="1">7:00:00</option>
+                  <option value="2">8:00:00</option>
+                  <option value="3">9:00:00</option>
+                  <option value="4">10:00:00</option>
+                  <option value="5">11:00:00</option>
+                  <option value="6">12:00:00</option>
+                  <option value="7">13:00:00</option>
+                  <option value="8">14:00:00</option>
+                  <option value="9">15:00:00</option>
+              </select>
+                  <br>
+<div class="boxnav" style=" z-index: 9999;position: absolute;right:30px;width:90%;height:150px;top:150px;border-radius:10px;border: 1px solid #6d6dea">
+                        <img src="../static/images/路口1.png" id="img1" style="width: 100%;height: 100%" onclick="showImage()">
+                  </div>
+                  <div id="modal" class="modal">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <img class="modal-content" id="modalImg">
+</div>
+              </div>
+            </div>
+              <script>
+                  function showImage() {
+    var modal = document.getElementById("modal");
+    var modalImg = document.getElementById("modalImg");
+    var img = document.getElementById("img1");
+
+    modal.style.display = "block";
+    modalImg.src = img.src;
+}
+
+function closeModal() {
+                      console.log(1)
+    var modal = document.getElementById("modal");
+    modal.style.display = "none";
+}
+              </script>
+            <!--交通对象数量统计-->
+             <div class="new-border" style="margin-top: 20px">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">排队车辆统计</div>
+              <div class="boxnav" style="height: 204px" id="chart6">
+                <!--放入图-->
+              </div>
+
+            </div>
+
+          </li>
+          <li style="width: 52%;">
+           <div class="new-border1" style="position: relative">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+               <div class="tit">路口三维场景</div>
+              <div class="boxnav"  id="3d" style="height: 625px">
+
+              </div>
+
+            </div>
+
+          </li>
+          <li style="width: 24%;" >
+            <div class="new-border" >
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">道路流量热力图</div>
+              <div class="boxnav"  style="height: 230px" id="chart10">
+
+              </div>
+
+            </div>
+             <div class="new-border" style="margin-top: 20px">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">路口违规次数统计</div>
+               <div class="boxnav" style="height: 240px" id="chart11">
+                <!--放入图-->
+
+                          </div>
+            </div>
+          </li>
+        </ul></div>
+        <div class="boxnav" style="border:none;padding: 10px 0;position:absolute;left:20px;top:690px;width: 99%;height: 580px;opacity: 1">
+          <ul class="clearfix nav2">
+            <li style="width: 23.7%;padding-right: 0">
+                 <div class="new-border" >
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">断面车流盒须图</div>
+              <div class="boxnav" id='chart7' style="height: 220px">
+                <!--放入图-->
+              </div></div>
+                      <div class="new-border" style="margin-top: 20px">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+                <div class="tit1">路口车流流向桑基图</div>
+              <div class="boxnav" style="height: 239px" id="chart8">
+                <!--放入图-->
+
+              </div></div>
+            </li>
+             <li style="width: 51.8%;margin-top: 90px">
+                <div class="new-border" >
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+                <div class="tit">交通流量变化预测</div>
+              <div class="boxnav" style="height: 437px" id="chart9">
+                <!--放入图-->
+              </div>
+               </div>
+             </li>
+             <li style="width: 23.7%;padding-left: 0">
+                  <div class="new-border" style="height: 572px">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">驾驶行为列表</div>
+                 <button value="逆行" style="width: 20%;height: 35px;margin-top: 10px;font-size: 18px;margin-right: 0px" id="nixingBtn">逆行</button>
+                 <button value="急变速" style="width: 20%;height: 35px;margin-top: 10px;font-size: 18px;margin-right: 0px" id="jibianBtn">急变速</button>
+               <button value="超速" style="width: 20%;height: 40px;margin-top: 10px;font-size: 18px;margin-right: 0px" id="chaosuBtn">超速</button>
+               <button value="长时间停车" style="width: 25%;height:40px;margin-top: 5px;font-size: 18px;margin-right: 0px" id="changtingBtn">长时间停车</button>
+               <button value="占用公交车道" style="width: 25%;height: 40px;margin-top: 5px;font-size: 18px;margin-right: 0px" id="zhangongBtn">占用公交车道</button>
+               <button value="占用非机动车道" style="width: 30%;height: 40px;margin-top: 5px;font-size: 18px;margin-right: 0px" id="zhanfeiBtn">占用非机动车道</button>
+               <input class="text" style="width: 400px;height: 30px;margin-top: 20px;" placeholder="请输入搜索信息" id="searchInput">
+               <button style="width: 20%;height: 40px;margin-top: 10px;font-size: 18px;margin-right: 0" id="searchBtn">搜索</button>
+                 <div class="boxnav" id="similarTable" style="padding: 0;">
+
+              <table  style="color: white;width: 100%;color: white" id="tableContainer" class="table1">
+
+
+              </table>
+                     <div id="pagination" style="width: 100%;margin-left: 45px;position: absolute;bottom: 15px"></div>
+                 </div></div>
+                 <script src="../static/js/table_create.js"></script>
+                 <script src="../static/js/search_info.js"></script>
+                 <script src="../static/js/jibiansu_tabel.js"></script>
+                  <script src="../static/js/chaosu_tabel.js"></script>
+                 <script src="../static/js/longpark_tabel.js"></script>
+                 <script src="../static/js/zhanbus_tabel.js"></script>
+                 <script src="../static/js/zhanfei_tabel.js"></script>
+            </li>
+
+          </ul>
+        </div>
+      </div>
+  </div>
+<script>
+                  $(function () {//使用on进行事件绑定事件。
+                    mychart1('time1');
+                    mychart2('time1');
+                    mychart3('time1');
+                    mychart4('time1');
+                    mychart5('time1');
+                    mychart6('time1');
+  onChange('time1');
+                    $("select").on('click',function(){
+                        if($("select").val()==1){
+                        mychart1('time1');
+                        mychart2('time1');
+                        mychart3('time1');
+                        mychart4('time1');
+                        mychart5('time1');
+                        mychart6('time1');
+  onChange('time2');
+                        }
+                        else if($("select").val()==2){
+                        mychart1('time2');
+                        mychart2('time2');
+                        mychart3('time2');
+                        mychart4('time2');
+                        mychart5('time2');
+                        mychart6('time2');
+  onChange('time3');
+                        }
+                        else if($("select").val()==3){
+                        mychart1('time3');
+                         mychart2('time3');
+                         mychart3('time3');
+                         mychart4('time3');
+                         mychart5('time3');
+                         mychart6('time3');
+  onChange('time4');
+                        }
+                        else if($("select").val()==4){
+                        mychart1('time4');
+                         mychart2('time4');
+                         mychart3('time4');
+                         mychart4('time4');
+                         mychart5('time4');
+                         mychart6('time4');
+  onChange('time5');
+                        }
+                        else if($("select").val()==5){
+                        mychart1('time5');
+                         mychart2('time5');
+                         mychart3('time5');
+                         mychart4('time5');
+                         mychart5('time5');
+                         mychart6('time5');
+                           onChange('time1');
+                        }
+                        else if($("select").val()==6){
+                        mychart1('time6');
+                         mychart2('time6');
+                         mychart3('time6');
+                         mychart4('time6');
+                         mychart5('time6');
+                         mychart6('time6');
+  onChange('time6');
+                        }
+                        else if($("select").val()==7){
+                        mychart1('time7');
+                         mychart2('time7');
+                         mychart3('time7');
+                         mychart4('time7');
+                         mychart5('time7');
+                         mychart6('time7');
+  onChange('time7');
+                        }
+                        else if($("select").val()==8){
+                        mychart1('time8');
+                         mychart2('time8');
+                         mychart3('time8');
+                         mychart4('time8');
+                         mychart5('time8');
+                         mychart6('time8');
+  onChange('time8');
+                        }
+
+                            })  ;
+                    $("#time_sec").on('click',function(){
+                        myChart1.clear();  //清空原来的图表
+                        myChart2.clear();
+                        myChart3.clear();
+                        myChart4.clear();
+                        myChart5.clear();
+                        myChart6.clear();
+
+                        mychart1('time_sec');//重新加载图表，之前必须要清空原来的，否则没有动画效果
+                        mychart2('time_sec');
+                        mychart3('time_sec');
+                        mychart4('time_sec');
+                        mychart5('time_sec');
+                        mychart6('time_sec');
+
+                    });
+                });
+                  // 基于准备好的dom，初始化echarts实例
+            var myChart1 = echarts.init(document.getElementById('chart6'));
+             var myChart2 = echarts.init(document.getElementById('chart7'));
+             var myChart3 = echarts.init(document.getElementById('chart8'));
+             var myChart4 = echarts.init(document.getElementById('chart9'));
+            var myChart5 = echarts.init(document.getElementById('chart10'));
+            var myChart6 = echarts.init(document.getElementById('chart11'));
+
+
+             let data1=[[169, 215, 217, 284, 299, 290, 243, 207, 165, 147, 163, 129, 159, 166, 146, 0,152, 135, 0,141, 170, 160, 150, 198,0, 144],
+               [118, 116, 106, 183, 0, 224, 250, 197, 174, 0, 0, 143, 0, 0, 191, 0,175, 0, 0, 0, 0, 0, 157, 206],
+                [119, 89, 92, 142, 216, 0, 0, 185, 180, 133, 158, 0, 0, 173, 0, 154, 0, 172, 0, 155, 0, 0,171, 0, 193, 202, 0, 184],
+                [0, 244, 239, 269, 398, 404, 277, 205, 161, 0, 240, 187, 186, 188, 167, 0, 0, 0, 226, 177, 225, 223, 227, 204],
+                [139, 176, 0, 0, 201, 212, 0, 195, 151, 131, 132, 137, 156, 0, 136, 148, 126, 0, 0, 0, 0, 127, 125, 0, 0,181],
+                [46, 55, 63, 45, 64, 67, 56, 49, 51, 32, 43, 0, 39, 0, 44, 0, 0, 0, 52, 42, 47, 40, 38, 0, 0, 0],
+                [48, 72, 58, 86, 101, 0, 124, 0, 0, 104, 96, 0, 97, 0, 0, 115, 107, 112, 0, 108, 0, 0, 0, 102, 0, 111, 120],
+                [0, 0, 62, 61, 88, 91, 105, 0, 98, 87, 90, 0, 82, 93, 99, 76, 65, 0, 0, 81, 84, 0, 100, 74, 75, 83]];
+             let xdata1 = ['7:00','7:20','7:40','8:00','8:20','8:40','9:00','9:20','9:40','10:00','10:20','10:40','11:00','11:20','11:40',
+                  '12:00','12:20','12:40','13:00','13:20','13:40','14:00','14:20','14:40','15:00','15:20','15:40'];
+             let juc2 = ['路口1', '路口2', '路口3', '路口4', '路口5', '路口6', '路口7', '路口8']
+              let data2 = [[[826, 1739, 1185, 876, 1032, 935, 942, 1052, 1027], [71, 56, 58, 57, 47, 63, 63, 49, 72],
+                  [441, 581, 358, 296, 335, 334, 325, 330, 375],
+                  [612.0, 410.0, 245.0, 137.0, 182.0, 172.0, 179.0, 163.0, 221.0]],
+                 [[427, 653, 486, 364, 442, 415, 386, 425, 431], [39, 76, 84, 88, 93, 81, 83, 79, 83],
+                  [399, 603, 419, 361, 397, 373, 344, 374, 404],
+                  [206.0, 191.0, 163.0, 101.0, 156.0, 171.0, 125.0, 147.0, 141.0]],
+                 [[420, 580, 469, 353, 417, 384, 395, 417, 430], [117, 192, 234, 192, 283, 224, 202, 203, 214],
+                  [414, 704, 446, 398, 384, 369, 344, 406, 419],
+                  [165.0, 424.0, 283.0, 250.0, 376.0, 416.0, 410.0, 354.0, 324.0]],
+                 [[561, 853, 719, 537, 619, 622, 656, 697, 702], [241, 346, 311, 269, 293, 244, 243, 327, 350],
+                  [631, 957, 703, 624, 642, 620, 579, 744, 711],
+                  [136.0, 245.0, 212.0, 173.0, 178.0, 152.0, 187.0, 198.0, 176.0]],
+                 [[494, 581, 410, 314, 336, 322, 341, 397, 338], [524, 394, 236, 152, 163, 156, 156, 144, 226],
+                  [404, 433, 494, 409, 442, 381, 397, 338, 427], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+                 [[455, 547, 389, 295, 291, 293, 307, 300, 290], [231, 295, 266, 195, 305, 321, 212, 199, 203],
+                  [309, 324, 392, 338, 361, 299, 300, 323, 346], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]],
+                 [[400, 504, 354, 255, 262, 262, 266, 257, 256], [165, 298, 258, 261, 333, 317, 280, 279, 277],
+                  [305, 508, 491, 377, 419, 348, 364, 239, 362], [6.0, 10.0, 10.0, 9.0, 8.0, 17.0, 10.0, 12.0, 5.0]],
+                 [[396, 479, 378, 284, 285, 283, 281, 277, 280], [177, 307, 273, 239, 260, 218, 233, 252, 235],
+                  [243, 307, 335, 287, 276, 239, 263, 261, 275], [2.0, 3.0, 4.0, 4.0, 2.0, 1.0, 2.0, 1.0, 0.0]]];
+      let road_juc_v=[[{name: '12'}, {name: '43'}, {name: '14'}, {name: '42'}, {name: '11'}, {name: '13'}],
+                      [{name: '37'}, {name: '48'}, {name: '30'}, {name: '32'}, {name: '44'}, {name: '47'}],
+                      [{name: '40'}, {name: '38'}, {name: '23'}, {name: '24'}, {name: '31'}, {name: '39'}],
+                      [{name: '34'}, {name: '35'}, {name: '25'}, {name: '26'}, {name: '33'}, {name: '36'}],
+                      [{name: '14'}, {name: '13'}, {name: '15'}, {name: '29'}],
+                      [{name: '47'}, {name: '16'}, {name: '17'}, {name: '48'}],
+                      [{name: '39'}, {name: '18'}, {name: '19'}, {name: '38'}],
+                      [{name: '45'}, {name: '20'}, {name: '21'}, {name: '46'}]]
+      let road_juc = [[{name: '41'}, {name: '11'}, {name: '43'}, {name: '14'}, {name: '42'}, {name: '44'}],
+                      [{name: '43'}, {name: '31'}, {name: '30'}, {name: '32'}, {name: '44'}, {name: '47'}],
+                      [{name: '30'}, {name: '25'}, {name: '23'}, {name: '24'}, {name: '31'}, {name: '39'}],
+                      [{name: '24'}, {name: '27'}, {name: '25'}, {name: '26'}, {name: '33'}, {name: '36'}],
+                      [{name: '28'}, {name: '16'}, {name: '13'}, {name: '15'}, {name: '29'}],
+                      [{name: '15'}, {name: '18'}, {name: '16'}, {name: '17'}, {name: '48'}],
+                      [{name: '17'}, {name: '20'}, {name: '18'}, {name: '19'}, {name: '38'}],
+                      [{name: '19'}, {name: '22'}, {name: '20'}, {name: '21'}, {name: '46'}]];
+      let road_v=[[{source: '12', target: '43', value: 43}, {source: '12', target: '14', value: 127},
+                   {source: '12', target: '42', value: 317}, {source: '12', target: '11', value: 14},
+                   {source: '13', target: '11', value: 7}, {source: '13', target: '43', value: 32},
+                   {source: '13', target: '14', value: 12}, {source: '13', target: '42', value: 30}],
+                  [{source: '37', target: '31', value: 182}, {source: '37', target: '32', value: 51},
+                   {source: '37', target: '44', value: 216}, {source: '37', target: '47', value: 158},
+                   {source: '48', target: '31', value: 19}, {source: '48', target: '32', value: 21},
+                   {source: '48', target: '44', value: 25}, {source: '48', target: '47', value: 19}],
+                  [{source: '40', target: '23', value: 99}, {source: '40', target: '24', value: 465},
+                   {source: '40', target: '31', value: 709}, {source: '40', target: '39', value: 517},
+                   {source: '38', target: '23', value: 148}, {source: '38', target: '24', value: 343},
+                   {source: '38', target: '31', value: 152}, {source: '38', target: '39', value: 290}],
+                  [{source: '34', target: '25', value: 991}, {source: '34', target: '26', value: 701},
+                   {source: '34', target: '33', value: 140}, {source: '34', target: '36', value: 694},
+                   {source: '35', target: '25', value: 38}, {source: '35', target: '26', value: 19},
+                   {source: '35', target: '33', value: 52}, {source: '35', target: '36', value: 20}],
+                  [{source: '14', target: '13', value: 16}, {source: '14', target: '15', value: 16},
+                   {source: '14', target: '29', value: 43}],
+                  [{source: '47', target: '16', value: 0}, {source: '47', target: '17', value: 17},
+                   {source: '47', target: '48', value: 3}],
+                  [{source: '39', target: '18', value: 129}, {source: '39', target: '19', value: 5},
+                   {source: '39', target: '38', value: 36}],
+                  [{source: '45', target: '20', value: 34}, {source: '45', target: '21', value: 27},
+                   {source: '45', target: '46', value: 21}]];
+      let road_p = [[{source: '41', target: '44', value: 2864}, {source: '41', target: '14', value: 317},
+                     {source: '41', target: '42', value: 44}, {source: '41', target: '11', value: 537},
+                     {source: '44', target: '43', value: 12}, {source: '44', target: '14', value: 51},
+                     {source: '44', target: '42', value: 460}, {source: '44', target: '11', value: 40}],
+                    [{source: '31', target: '30', value: 1}, {source: '31', target: '32', value: 7},
+                     {source: '31', target: '44', value: 112}, {source: '31', target: '47', value: 6},
+                     {source: '43', target: '30', value: 289}, {source: '43', target: '32', value: 21},
+                     {source: '43', target: '44', value: 1}, {source: '43', target: '47', value: 10}],
+                    [{source: '30', target: '23', value: 2}, {source: '30', target: '24', value: 48},
+                     {source: '30', target: '31', value: 3}, {source: '30', target: '39', value: 17},
+                     {source: '25', target: '23', value: 4}, {source: '25', target: '24', value: 9},
+                     {source: '25', target: '31', value: 109}, {source: '25', target: '39', value: 24}],
+                    [{source: '24', target: '25', value: 138}, {source: '24', target: '26', value: 170},
+                     {source: '24', target: '33', value: 1040}, {source: '24', target: '36', value: 13},
+                     {source: '27', target: '25', value: 2328}, {source: '27', target: '26', value: 590},
+                     {source: '27', target: '33', value: 2347}, {source: '27', target: '36', value: 602}],
+                    [{source: '28', target: '13', value: 603}, {source: '28', target: '15', value: 2598},
+                     {source: '28', target: '29', value: 100}, {source: '16', target: '13', value: 19},
+                     {source: '16', target: '15', value: 2}, {source: '16', target: '29', value: 142}],
+                    [{source: '15', target: '16', value: 1}, {source: '15', target: '17', value: 55},
+                     {source: '15', target: '48', value: 20}, {source: '18', target: '16', value: 477},
+                     {source: '18', target: '17', value: 96}, {source: '18', target: '48', value: 142}],
+                    [{source: '17', target: '18', value: 0}, {source: '17', target: '19', value: 3},
+                     {source: '17', target: '38', value: 8}, {source: '20', target: '18', value: 133},
+                     {source: '20', target: '19', value: 81}, {source: '20', target: '38', value: 139}],
+                    [{source: '19', target: '20', value: 3}, {source: '19', target: '21', value: 106},
+                     {source: '19', target: '46', value: 34}, {source: '22', target: '20', value: 1790},
+                     {source: '22', target: '21', value: 455}, {source: '22', target: '46', value: 35}]];
+      let junction9=[['路段11（北）', '路段12（北）', '路段13（南）', '路段14（南）', '路段41（西）', '路段42（西）', '路段43（东）','路段44（东）'],
+      ['路段37（北）', '路段32（北）', '路段47（南）', '路段48（南）', '路段43（西）', '路段44（西）', '路段31（东）','路段30（东）'],
+      ['路段40（北）', '路段23（北）', '路段39（南）', '路段38（南）', '路段31（西）', '路段30（西）', '路段25（东）','路段24（东）'],
+      ['路段34（北）', '路段33（北）', '路段36（南）', '路段35（南）', '路段25（西）', '路段24（西）', '路段27（东）','路段26（东）'],
+      ['路段13（北）', '路段14（北）', '路段28（西）', '路段29（西）', '路段16（东）','路段15（东）'],
+      ['路段47（北）', '路段48（北）', '路段16（西）', '路段15（西）', '路段18（东）','路段17（东）'],
+      ['路段39（北）', '路段38（北）', '路段1（南）', '路段2（南）','路段18（西）', '路段17（西）', '路段20（东）','路段19（东）'],
+      ['路段45（北）', '路段46（北）', '路段4（南）', '路段3（南）','路段20（西）', '路段19（西）', '路段22（东）','路段21（东）']
+      ];
+      let quarter9=[['07:00','07:15','07:30','07:45'],['08:00','08:15','08:30','08:45'],['09:00','09:15','09:30','09:45'],
+      ['10:00','10:15','10:30','10:45'],['11:00','11:15','11:30','11:45'],['12:00','12:15','12:30','12:45'],['13:00','13:15','13:30','13:45'],
+      ['14:00','14:15','14:30','14:45'],['15:00','15:15','15:30','15:45']];
+      let data3=[[[[92.8, 138.1, 153.4, 148.7], [68.6, 117.7, 141.4, 146.7], [13.7, 44.7, 65.1, 76.6], [3.5, 25.7, 40.3, 48.6],
+            [13.1, 13.4, 14.2, 15.7], [3.0, 5.1, 7.0, 8.4], [8.0, 10.4, 12.1, 13.4], [10.3, 16.5, 23.2, 29.5]],
+           [[132.6, 112.0, 91.4, 74.0], [139.9, 126.3, 110.0, 93.8], [81.2, 80.8, 77.3, 72.1], [51.8, 51.4, 48.5, 44.3],
+            [17.7, 19.9, 21.9, 23.5], [9.4, 9.9, 9.9, 9.7], [14.5, 15.5, 16.3, 16.9], [34.7, 38.2, 40.0, 40.0]],
+           [[61.1, 52.5, 47.7, 45.4], [79.4, 67.8, 59.0, 52.6], [66.4, 61.0, 56.5, 53.1], [39.6, 34.9, 30.7, 27.3],
+            [24.3, 24.4, 23.9, 22.9], [9.1, 8.4, 7.6, 6.9], [17.4, 17.6, 17.6, 17.3], [38.5, 36.0, 33.0, 30.1]],
+           [[44.5, 43.8, 42.7, 41.1], [48.2, 45.3, 43.2, 41.8], [50.8, 49.4, 48.8, 48.8], [24.7, 22.7, 21.5, 20.7],
+            [21.7, 20.8, 20.2, 20.2], [6.4, 6.0, 5.8, 5.8], [16.9, 16.2, 15.5, 14.7], [27.5, 25.6, 24.6, 24.3]],
+           [[39.1, 37.0, 35.2, 34.2], [40.8, 40.3, 40.1, 40.3], [49.0, 49.4, 49.8, 50.1], [20.2, 20.0, 19.8, 19.6],
+            [20.8, 21.8, 23.0, 24.1], [5.9, 6.0, 6.1, 6.1], [14.0, 13.5, 13.0, 12.7], [24.7, 25.4, 26.2, 26.8]],
+           [[34.1, 35.0, 36.4, 38.0], [40.7, 41.2, 41.6, 41.7], [50.4, 50.6, 50.7, 50.8], [19.4, 19.2, 18.9, 18.7],
+            [24.8, 24.8, 24.2, 22.9], [6.1, 5.9, 5.6, 5.4], [12.5, 12.5, 12.5, 12.5], [27.0, 26.7, 25.9, 24.7]],
+           [[39.2, 39.7, 39.3, 38.1], [41.4, 40.5, 39.4, 38.4], [50.8, 50.9, 50.9, 50.8], [18.5, 18.4, 18.5, 18.8],
+            [21.4, 20.1, 19.6, 20.4], [5.1, 5.0, 5.0, 5.3], [12.6, 12.7, 12.7, 12.8], [23.6, 22.8, 22.5, 23.2]],
+           [[36.5, 35.2, 34.8, 35.8], [37.9, 38.6, 40.8, 44.8], [50.7, 50.5, 50.2, 49.7], [19.3, 20.0, 20.8, 21.6],
+            [22.9, 27.1, 32.8, 39.0], [5.8, 6.4, 7.2, 7.8], [13.0, 13.3, 13.6, 13.9], [24.8, 27.2, 30.1, 32.8]]],
+          [[[8.3, 13.6, 19.9, 26.0], [41.7, 52.1, 64.4, 76.8], [34.4, 44.5, 51.3, 56.0], [9.8, 20.8, 27.9, 31.8],
+            [8.0, 10.4, 12.1, 13.4], [10.3, 16.5, 23.2, 29.5], [6.4, 13.4, 19.2, 23.4], [25.9, 26.6, 30.8, 36.3]],
+           [[31.2, 34.8, 36.9, 37.5], [87.7, 95.8, 100.4, 101.3], [59.4, 61.9, 63.8, 65.4],
+            [32.9, 32.0, 29.7, 26.5], [14.5, 15.5, 16.3, 16.9], [34.7, 38.2, 40.0, 40.0], [25.8, 26.5, 25.6, 23.7],
+            [41.5, 45.3, 47.0, 46.5]],
+           [[36.9, 35.5, 33.7, 32.0], [98.8, 93.5, 86.6, 79.1], [66.6, 67.5, 68.1, 68.4], [23.0, 19.6, 16.5, 13.9],
+            [17.4, 17.6, 17.6, 17.3], [38.5, 36.0, 33.0, 30.1], [21.1, 18.4, 16.1, 14.3], [44.3, 40.8, 36.7, 32.8]],
+           [[30.5, 29.5, 29.0, 29.0], [72.1, 66.6, 63.1, 62.0], [68.5, 68.4, 68.2, 67.9], [12.1, 10.9, 10.3, 10.3],
+            [16.9, 16.2, 15.5, 14.7], [27.5, 25.6, 24.6, 24.3], [13.3, 13.1, 13.7, 14.9], [29.6, 27.5, 26.6, 26.9]],
+           [[29.4, 29.9, 30.5, 30.9], [62.9, 65.5, 69.1, 72.8], [67.5, 67.1, 66.5, 65.8], [10.8, 11.5, 12.4, 13.2],
+            [14.0, 13.5, 13.0, 12.7], [24.7, 25.4, 26.2, 26.8], [16.3, 17.8, 19.1, 20.0], [28.0, 29.7, 31.5, 33.0]],
+           [[31.2, 31.3, 31.2, 31.1], [76.1, 78.2, 79.0, 78.5], [65.1, 64.3, 63.8, 63.8], [27.0, 26.7, 25.9, 24.7]
+               , [12.5, 12.5, 12.5, 12.5], [20.5, 20.4, 19.9, 19.2], [20.5, 20.4, 19.9, 19.2],
+            [34.0, 34.3, 34.0, 33.3]],
+           [[31.1, 31.2, 31.5, 31.9], [77.0, 75.2, 74.0, 74.0], [64.6, 66.6, 70.1, 75.2], [14.6, 14.4, 14.4, 14.7]
+               , [12.6, 12.7, 12.7, 12.8], [23.6, 22.8, 22.5, 23.2], [18.3, 17.4, 16.8, 16.3],
+            [32.3, 31.5, 31.0, 30.9]],
+           [[32.3, 32.6, 32.5, 31.8], [75.8, 79.6, 85.1, 91.2], [81.7, 89.2, 96.7, 102.8], [15.2, 16.2, 17.5, 18.9]
+               , [13.0, 13.3, 13.6, 13.9], [24.8, 27.2, 30.1, 32.8], [16.1, 16.0, 15.9, 15.6],
+            [31.2, 31.9, 32.5, 32.7]]],
+          [[[38.0, 52.4, 62.8, 70.2]
+               , [9.4, 17.0, 25.2, 33.1]
+               , [9.9, 8.7, 10.7, 14.3]
+               , [1.7, 7.7, 12.6, 16.4]
+               , [6.4, 13.4, 19.2, 23.4]
+               , [25.9, 26.6, 30.8, 36.3]
+               , [8.7, 9.4, 10.3, 11.5]
+               , [2.3, 3.8, 5.3, 6.8]],
+           [[75.6, 79.6, 82.4, 84.4]
+               , [39.8, 44.9, 48.2, 49.5]
+               , [18.3, 21.7, 24.1, 25.1]
+               , [19.2, 21.1, 22.2, 22.6]
+               , [25.8, 26.5, 25.6, 23.7]
+               , [41.5, 45.3, 47.0, 46.5]
+               , [12.8, 14.0, 15.1, 15.9]
+               , [8.6, 10.4, 12.3, 14.0]],
+           [[85.8, 86.7, 87.1, 87.4]
+               , [49.2, 47.5, 44.8, 41.8]
+               , [25.1, 24.2, 23.1, 22.1]
+               , [22.3, 21.6, 20.5, 19.3]
+               , [21.1, 18.4, 16.1, 14.3]
+               , [44.3, 40.8, 36.7, 32.8]
+               , [16.5, 16.8, 16.8, 16.7]
+               , [15.4, 16.4, 17.0, 17.1]],
+           [[87.6, 87.9, 88.3, 88.7]
+               , [38.7, 35.9, 33.7, 32.1]
+               , [21.6, 21.8, 22.8, 24.4]
+               , [18.1, 17.0, 16.1, 15.4]
+               , [13.3, 13.1, 13.7, 14.9]
+               , [29.6, 27.5, 26.6, 26.9]
+               , [16.6, 16.4, 16.3, 16.3]
+               , [17.0, 16.6, 16.2, 16.0]],
+           [[89.3, 89.7, 89.9, 89.8]
+               , [31.2, 30.9, 31.1, 31.4]
+               , [26.3, 28.1, 29.6, 30.5]
+               , [15.1, 15.1, 15.3, 15.7]
+               , [16.3, 17.8, 19.1, 20.0]
+               , [28.0, 29.7, 31.5, 33.0]
+               , [16.3, 16.4, 16.4, 16.3]
+               , [15.9, 16.1, 16.6, 17.3]],
+           [[89.2, 88.2, 87.1, 86.1]
+               , [31.9, 32.4, 32.8, 33.1]
+               , [30.5, 29.9, 28.9, 27.7]
+               , [34.0, 34.3, 34.0, 33.3]
+               , [20.5, 20.4, 19.9, 19.2]
+               , [16.1, 15.7, 15.1, 14.3]
+               , [16.1, 15.7, 15.1, 14.3]
+               , [18.0, 18.8, 19.4, 19.7]],
+           [[85.8, 86.6, 88.9, 93.2]
+               , [33.4, 33.8, 34.4, 35.2]
+               , [26.9, 27.0, 28.2, 30.8]
+               , [18.2, 18.4, 18.6, 18.8]
+               , [18.3, 17.4, 16.8, 16.3]
+               , [32.3, 31.5, 31.0, 30.9]
+               , [13.6, 12.9, 12.5, 12.4]
+               , [19.9, 19.9, 19.8, 19.9]],
+           [[99.4, 107.1, 115.3, 122.3]
+               , [36.1, 37.2, 38.0, 38.3]
+               , [34.6, 39.2, 43.8, 47.4]
+               , [19.1, 19.5, 19.9, 20.4]
+               , [16.1, 16.0, 15.9, 15.6]
+               , [31.2, 31.9, 32.5, 32.7]
+               , [12.8, 13.6, 14.7, 16.0]
+               , [20.1, 20.7, 21.6, 22.7]]],
+          [[[31.7, 49.8, 70.4, 90.1]
+               , [9.8, 14.9, 25.9, 39.3]
+               , [0, 3.2, 9.7, 15.6]
+               , [11.2, 18.7, 28.4, 38.4]
+               , [8.7, 9.4, 10.3, 11.5]
+               , [2.3, 3.8, 5.3, 6.8]
+               , [5.3, 6.3, 7.6, 8.9]
+               , [11.6, 12.7, 14.3, 16.2]],
+           [[106.3, 117.5, 122.8, 122.6]
+               , [51.9, 61.5, 66.9, 67.7]
+               , [20.1, 22.8, 23.7, 23.0]
+               , [47.2, 53.7, 57.3, 58.0]
+               , [12.8, 14.0, 15.1, 15.9]
+               , [8.6, 10.4, 12.3, 14.0]
+               , [10.1, 11.0, 11.6, 11.7]
+               , [18.0, 19.6, 20.8, 21.7]],
+           [[117.7, 109.5, 99.7, 89.8]
+               , [64.4, 57.9, 49.5, 40.5]
+               , [21.1, 18.5, 15.8, 13.5]
+               , [56.0, 52.1, 47.1, 41.7]
+               , [16.5, 16.8, 16.8, 16.7]
+               , [15.4, 16.4, 17.0, 17.1]
+               , [11.4, 10.9, 10.1, 9.3]
+               , [22.0, 22.1, 21.9, 21.6]],
+           [[81.1, 74.6, 70.5, 69.0]
+               , [32.4, 25.9, 21.8, 20.1]
+               , [11.7, 10.7, 10.4, 10.7]
+               , [36.6, 32.6, 29.7, 28.3]
+               , [16.6, 16.4, 16.3, 16.3]
+               , [17.0, 16.6, 16.2, 16.0]
+               , [8.6, 8.1, 7.8, 7.7]
+               , [21.5, 21.5, 21.7, 22.2]],
+           [[69.4, 71.1, 73.0, 74.5]
+               , [20.7, 22.9, 26.0, 29.4]
+               , [11.3, 12.1, 12.8, 13.3]
+               , [28.0, 28.6, 29.7, 30.8]
+               , [16.3, 16.4, 16.4, 16.3]
+               , [15.9, 16.1, 16.6, 17.3]
+               , [7.8, 8.0, 8.3, 8.5]
+               , [22.8, 23.5, 24.1, 24.4]],
+           [[74.7, 73.6, 71.0, 67.7]
+               , [32.2, 34.2, 35.1, 34.9]
+               , [13.4, 13.4, 13.1, 12.9]
+               , [18.0, 18.8, 19.4, 19.7]
+               , [16.1, 15.7, 15.1, 14.3]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [24.4, 23.9, 23.0, 21.7]],
+           [[64.2, 61.5, 60.6, 62.1]
+               , [34.0, 32.9, 32.1, 32.0]
+               , [12.8, 13.0, 13.6, 14.4]
+               , [30.8, 30.4, 30.5, 31.4]
+               , [13.6, 12.9, 12.5, 12.4]
+               , [19.9, 19.9, 19.8, 19.9]
+               , [6.5, 6.0, 5.6, 5.6]
+               , [20.2, 18.7, 17.3, 16.4]],
+           [[66.2, 72.7, 80.6, 88.3]
+               , [32.7, 34.3, 36.4, 38.4]
+               , [15.3, 16.1, 16.5, 16.3]
+               , [33.1, 35.6, 38.4, 40.9]
+               , [12.8, 13.6, 14.7, 16.0]
+               , [20.1, 20.7, 21.6, 22.7]
+               , [6.1, 6.9, 8.1, 9.4]
+               , [16.1, 16.4, 17.2, 18.4]]],
+          [[[13.7, 44.7, 65.1, 76.6]
+               , [3.5, 25.7, 40.3, 48.6]
+               , [23.9, 30.9, 38.5, 46.1]
+               , [35.2, 39.9, 45.6, 51.3]
+               , [1.8, 39.0, 66.9, 85.6]
+               , [44.5, 73.6, 86.0, 87.3]
+               , [5.3, 6.3, 7.6, 8.9]
+               , [11.6, 12.7, 14.3, 16.2]],
+           [[81.2, 80.8, 77.3, 72.1]
+               , [51.8, 51.4, 48.5, 44.3]
+               , [52.7, 57.7, 60.8, 62.0]
+               , [56.3, 60.1, 62.2, 62.5]
+               , [96.1, 99.4, 97.1, 90.6]
+               , [82.2, 74.5, 66.6, 60.2]
+               , [10.1, 11.0, 11.6, 11.7]
+               , [18.0, 19.6, 20.8, 21.7]],
+           [[66.4, 61.0, 56.5, 53.1]
+               , [39.6, 34.9, 30.7, 27.3]
+               , [61.3, 59.1, 56.0, 52.4]
+               , [61.3, 58.9, 55.6, 51.9]
+               , [81.5, 71.3, 61.3, 52.3]
+               , [55.8, 53.5, 52.6, 52.5]
+               , [11.4, 10.9, 10.1, 9.3]
+               , [22.0, 22.1, 21.9, 21.6]],
+           [[50.8, 49.4, 48.8, 48.8]
+               , [24.7, 22.7, 21.5, 20.7]
+               , [48.9, 46.0, 43.8, 42.6]
+               , [48.4, 45.5, 43.3, 42.0]
+               , [45.1, 39.8, 36.7, 35.5]
+               , [52.5, 52.0, 50.7, 48.8]
+               , [8.6, 8.1, 7.8, 7.7]
+               , [21.5, 21.5, 21.7, 22.2]],
+           [[49.0, 49.4, 49.8, 50.1]
+               , [20.2, 20.0, 19.8, 19.6]
+               , [42.2, 42.6, 43.3, 44.2]
+               , [41.7, 42.1, 43.0, 44.2]
+               , [35.7, 36.9, 38.5, 40.1]
+               , [46.2, 43.4, 40.8, 38.7]
+               , [7.8, 8.0, 8.3, 8.5]
+               , [22.8, 23.5, 24.1, 24.4]],
+           [[50.4, 50.6, 50.7, 50.8]
+               , [19.4, 19.2, 18.9, 18.7]
+               , [44.9, 45.2, 45.1, 44.5]
+               , [37.3, 36.6, 36.5, 36.9]
+               , [41.3, 41.8, 41.5, 40.6]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [24.4, 23.9, 23.0, 21.7]]],
+          [[[34.4, 44.5, 51.3, 56.0]
+               , [9.8, 20.8, 27.9, 31.8]
+               , [9.0, 29.3, 43.0, 50.8]
+               , [34.4, 50.1, 58.4, 61.9]
+               , [9.0, 29.3, 43.0, 50.8]
+               , [34.4, 50.1, 58.4, 61.9]
+               , [5.3, 6.3, 7.6, 8.9]
+               , [11.6, 12.7, 14.3, 16.2]],
+           [[59.4, 61.9, 63.8, 65.4]
+               , [32.9, 32.0, 29.7, 26.5]
+               , [53.7, 53.0, 49.6, 44.6]
+               , [62.7, 62.3, 61.8, 61.5]
+               , [53.7, 53.0, 49.6, 44.6]
+               , [62.7, 62.3, 61.8, 61.5]
+               , [10.1, 11.0, 11.6, 11.7]
+               , [18.0, 19.6, 20.8, 21.7]],
+           [[66.6, 67.5, 68.1, 68.4]
+               , [23.0, 19.6, 16.5, 13.9]
+               , [39.0, 33.4, 28.5, 24.5]
+               , [61.5, 61.7, 61.7, 61.5]
+               , [39.0, 33.4, 28.5, 24.5]
+               , [61.5, 61.7, 61.7, 61.5]
+               , [11.4, 10.9, 10.1, 9.3]
+               , [22.0, 22.1, 21.9, 21.6]],
+           [[68.5, 68.4, 68.2, 67.9]
+               , [12.1, 10.9, 10.3, 10.3]
+               , [21.7, 19.9, 19.2, 19.1]
+               , [60.8, 59.6, 58.1, 56.5]
+               , [21.7, 19.9, 19.2, 19.1]
+               , [60.8, 59.6, 58.1, 56.5]
+               , [8.6, 8.1, 7.8, 7.7]
+               , [21.5, 21.5, 21.7, 22.2]],
+           [[67.5, 67.1, 66.5, 65.8]
+               , [10.8, 11.5, 12.4, 13.2]
+               , [19.5, 20.1, 20.7, 21.0]
+               , [55.0, 53.9, 53.3, 53.2]
+               , [19.5, 20.1, 20.7, 21.0]
+               , [55.0, 53.9, 53.3, 53.2]
+               , [7.8, 8.0, 8.3, 8.5]
+               , [22.8, 23.5, 24.1, 24.4]],
+           [[65.1, 64.3, 63.8, 63.8]
+               , [13.9, 14.4, 14.6, 14.7]
+               , [21.0, 20.6, 19.9, 19.0]
+               , [53.5, 54.2, 54.8, 55.3]
+               , [21.0, 20.6, 19.9, 19.0]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [24.4, 23.9, 23.0, 21.7]]],
+          [[[9.9, 8.7, 10.7, 14.3]
+               , [1.7, 7.7, 12.6, 16.4]
+               , [-0.1, 1.0, 1.8, 2.1]
+               , [0.3, 0.1, 0.1, 0.2]
+               , [9.0, 29.3, 43.0, 50.8]
+               , [34.4, 50.1, 58.4, 61.9]
+               , [5.3, 6.3, 7.6, 8.9]
+               , [11.6, 12.7, 14.3, 16.2]],
+           [[18.3, 21.7, 24.1, 25.1]
+               , [19.2, 21.1, 22.2, 22.6]
+               , [2.2, 2.1, 1.9, 1.6]
+               , [0.3, 0.5, 0.7, 0.9]
+               , [53.7, 53.0, 49.6, 44.6]
+               , [62.7, 62.3, 61.8, 61.5]
+               , [10.1, 11.0, 11.6, 11.7]
+               , [18.0, 19.6, 20.8, 21.7]],
+           [[25.1, 24.2, 23.1, 22.1]
+               , [22.3, 21.6, 20.5, 19.3]
+               , [1.4, 1.2, 1.1, 1.0]
+               , [1.0, 1.1, 1.1, 1.0]
+               , [39.0, 33.4, 28.5, 24.5]
+               , [61.5, 61.7, 61.7, 61.5]
+               , [11.4, 10.9, 10.1, 9.3]
+               , [22.0, 22.1, 21.9, 21.6]],
+           [[21.6, 21.8, 22.8, 24.4]
+               , [18.1, 17.0, 16.1, 15.4]
+               , [1.0, 1.1, 1.2, 1.3]
+               , [0.9, 0.9, 0.8, 0.8]
+               , [21.7, 19.9, 19.2, 19.1]
+               , [60.8, 59.6, 58.1, 56.5]
+               , [8.6, 8.1, 7.8, 7.7]
+               , [21.5, 21.5, 21.7, 22.2]],
+           [[26.3, 28.1, 29.6, 30.5]
+               , [15.1, 15.1, 15.3, 15.7]
+               , [1.4, 1.5, 1.5, 1.5]
+               , [0.9, 1.1, 1.3, 1.5]
+               , [19.5, 20.1, 20.7, 21.0]
+               , [55.0, 53.9, 53.3, 53.2]
+               , [7.8, 8.0, 8.3, 8.5]
+               , [22.8, 23.5, 24.1, 24.4]],
+           [[30.5, 29.9, 28.9, 27.7]
+               , [16.3, 16.8, 17.4, 17.8]
+               , [1.5, 1.5, 1.5, 1.6]
+               , [53.5, 54.2, 54.8, 55.3]
+               , [21.0, 20.6, 19.9, 19.0]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [8.5, 8.2, 7.8, 7.2]
+               , [24.4, 23.9, 23.0, 21.7]],
+           [[26.9, 27.0, 28.2, 30.8]
+               , [18.2, 18.4, 18.6, 18.8]
+               , [1.7, 1.8, 1.8, 1.9]
+               , [2.1, 2.0, 1.8, 1.6]
+               , [18.0, 17.1, 16.4, 16.1]
+               , [55.4, 55.1, 54.4, 53.7]
+               , [6.5, 6.0, 5.6, 5.6]
+               , [20.2, 18.7, 17.3, 16.4]],
+           [[34.6, 39.2, 43.8, 47.4]
+               , [19.1, 19.5, 19.9, 20.4]
+               , [1.9, 1.8, 1.6, 1.3]
+               , [1.3, 1.1, 1.0, 1.0]
+               , [16.3, 16.9, 17.9, 19.0]
+               , [53.1, 53.1, 53.8, 55.1]
+               , [6.1, 6.9, 8.1, 9.4]
+               , [16.1, 16.4, 17.2, 18.4]]],
+          [[[22.2, 36.6, 48.8, 58.4]
+               , [8.6, 22.0, 33.8, 43.3]
+               , [0.0, 0.0, 0.0, 0.0]
+               , [0.0, 0.1, 0.3, 0.5]
+               , [10.4, 25.3, 34.7, 39.6]
+               , [22.0, 28.1, 32.4, 35.4]
+               , [11.8, 27.9, 38.1, 43.6]
+               , [28.9, 34.0, 47.4, 64.7]],
+           [[65.1, 68.9, 69.7, 68.0]
+               , [49.9, 53.5, 54.2, 52.4]
+               , [0.0, 0.0, 0.1, 0.1]
+               , [0.6, 0.7, 0.7, 0.7]
+               , [41.2, 40.6, 38.5, 35.6]
+               , [37.7, 39.7, 41.6, 43.2]
+               , [45.4, 44.6, 42.2, 38.9]
+               , [82.1, 96.8, 107.1, 112.1]],
+           [[64.2, 59.1, 53.2, 47.5]
+               , [48.9, 44.3, 39.5, 35.0]
+               , [0.1, 0.2, 0.2, 0.2]
+               , [0.8, 0.8, 0.8, 0.8]
+               , [32.4, 29.3, 26.6, 24.3]
+               , [44.7, 46.0, 46.9, 47.3]
+               , [35.3, 32.0, 29.2, 27.1]
+               , [112.1, 108.0, 101.3, 93.4]],
+           [[42.4, 38.4, 36.0, 35.0]
+               , [31.4, 29.1, 28.0, 28.0]
+               , [0.1, 0.1, 0.1, 0.0]
+               , [0.8, 0.8, 0.8, 0.8]
+               , [22.6, 21.3, 20.5, 20.2]
+               , [47.4, 47.0, 46.3, 45.4]
+               , [25.5, 24.6, 24.1, 24.0]
+               , [86.0, 80.2, 76.8, 75.9]],
+           [[35.4, 36.7, 38.6, 40.6]
+               , [28.9, 30.3, 31.6, 32.6]
+               , [0.0, 0.0, 0.0, 0.0]
+               , [0.8, 0.8, 0.7, 0.7]
+               , [20.1, 20.2, 20.4, 20.6]
+               , [44.4, 43.3, 42.3, 41.4]
+               , [24.0, 24.0, 24.0, 23.9]
+               , [77.5, 80.8, 84.9, 88.8]],
+           [[42.1, 42.7, 42.5, 41.3]
+               , [32.9, 32.3, 31.1, 29.5]
+               , [0.0, 0.0, 0.0, 0.0]
+               , [40.6, 39.9, 39.3, 38.8]
+               , [20.5, 20.2, 19.7, 18.8]
+               , [23.6, 23.1, 22.6, 22.1]
+               , [23.6, 23.1, 22.6, 22.1]
+               , [91.8, 93.1, 92.5, 90.2]],
+           [[39.5, 37.4, 35.7, 34.8]
+               , [27.7, 26.4, 26.0, 26.8]
+               , [0.0, 0.0, 0.0, 0.0]
+               , [0.3, 0.3, 0.2, 0.2]
+               , [17.8, 16.8, 15.9, 15.3]
+               , [38.4, 38.1, 37.9, 38.0]
+               , [21.7, 21.5, 21.6, 22.1]
+               , [86.4, 82.1, 77.8, 74.5]],
+           [[35.2, 37.1, 40.4, 44.3]
+               , [29.0, 32.4, 36.6, 40.9]
+               , [0.0, 0.0, 0.0, 0.0]
+               , [0.2, 0.2, 0.2, 0.2]
+               , [15.3, 16.0, 17.4, 19.3]
+               , [38.5, 39.2, 40.1, 41.1]
+               , [23.0, 24.2, 25.8, 27.3]
+               , [72.5, 72.1, 73.0, 74.5]]]];
+       let data5=[[[0,0,114],[0,1,226],[0,2,132],[0,3,79],[0,4,77],[0,5,93],[0,6,97],[0,7,91],[0,8,72],
+               [1,0,71],[1,1,56],[1,2,58],[1,3,57],[1,4,47],[1,5,63],[1,6,63],[1,7,49],[1,8,72],
+               [2,0,612],[2,1,410],[2,2,245],[2,3,137],[2,4,182],[2,5,172],[2,6,179],[2,7,163],[2,8,221],
+               [3,0,524],[3,1,394],[3,2,236],[3,3,152],[3,4,163],[3,5,156],[3,6,156],[3,7,144],[3,8,226],
+               [4,0,826],[4,1,1739],[4,2,1185],[4,3,876],[4,4,1032],[4,5,935],[4,6,942],[4,7,1052],[4,8,1027],
+               [5,0,465],[5,1,521],[5,2,366],[5,3,271],[5,4,311],[5,5,288],[5,6,311],[5,7,294],[5,8,374],
+               [6,0,427],[6,1,653],[6,2,486],[6,3,364],[6,4,442],[6,5,415],[6,6,386],[6,7,425],[6,8,431],
+               [7,0,441],[7,1,581],[7,2,358],[7,3,296],[7,4,355],[7,5,334],[7,6,325],[7,7,330],[7,8,375]],
+               [[0,0,39],[0,1,76],[0,2,84],[0,3,88],[0,4,93],[0,5,81],[0,6,83],[0,7,79],[0,8,83],
+               [1,0,101],[1,1,225],[1,2,143],[1,3,146],[1,4,120],[1,5,139],[1,6,118],[1,7,128],[1,8,112],
+               [2,0,231],[2,1,295],[2,2,266],[2,3,195],[2,4,305],[2,5,321],[2,6,212],[2,7,199],[2,8,203],
+               [3,0,206],[3,1,191],[3,2,163],[3,3,101],[3,4,156],[3,5,171],[3,6,125],[3,7,147],[3,8,141],
+               [4,0,427],[4,1,653],[4,2,486],[4,3,364],[4,4,442],[4,5,415],[4,6,386],[4,7,425],[4,8,431],
+               [5,0,441],[5,1,581],[5,2,358],[5,3,296],[5,4,355],[5,5,334],[5,6,325],[5,7,330],[5,8,375],
+               [6,0,399],[6,1,603],[6,2,419],[6,3,361],[6,4,397],[6,5,373],[6,6,344],[6,7,374],[6,8,404],
+               [7,0,420],[7,1,580],[7,2,469],[7,3,353],[7,4,417],[7,5,384],[7,6,395],[7,7,417],[7,8,430]],
+               [[0,0,117],[0,1,192],[0,2,234],[0,3,192],[0,4,238],[0,5,224],[0,6,202],[0,7,203],[0,8,214],
+               [1,0,59],[1,1,86],[1,2,89],[1,3,73],[1,4,92],[1,5,99],[1,6,109],[1,7,93],[1,8,103],
+               [2,0,165],[2,1,298],[2,2,258],[2,3,261],[2,4,333],[2,5,317],[2,6,280],[2,7,279],[2,8,277],
+               [3,0,165],[3,1,424],[3,2,283],[3,3,250],[3,4,376],[3,5,416],[3,6,410],[3,7,354],[3,8,324],
+               [4,0,399],[4,1,603],[4,2,419],[4,3,361],[4,4,397],[4,5,373],[4,6,344],[4,7,374],[4,8,404],
+               [5,0,420],[5,1,580],[5,2,469],[5,3,353],[5,4,417],[5,5,384],[5,6,395],[5,7,417],[5,8,430],
+               [6,0,414],[6,1,704],[6,2,446],[6,3,398],[6,4,384],[6,5,369],[6,6,344],[6,7,406],[6,8,419],
+               [7,0,561],[7,1,853],[7,2,719],[7,3,537],[7,4,619],[7,5,622],[7,6,656],[7,7,697],[7,8,702]],
+               [[0,0,241],[0,1,346],[0,2,311],[0,3,269],[0,4,293],[0,5,244],[0,6,243],[0,7,327],[0,8,350],
+               [1,0,336],[1,1,420],[1,2,511],[1,3,451],[1,4,507],[1,5,452],[1,6,487],[1,7,634],[1,8,575],
+               [2,0,242],[2,1,449],[2,2,336],[2,3,266],[2,4,284],[2,5,252],[2,6,250],[2,7,281],[2,8,258],
+               [3,0,136],[3,1,245],[3,2,212],[3,3,173],[3,4,178],[3,5,152],[3,6,187],[3,7,198],[3,8,176],
+               [4,0,414],[4,1,704],[4,2,446],[4,3,398],[4,4,384],[4,5,369],[4,6,344],[4,7,406],[4,8,419],
+               [5,0,561],[5,1,853],[5,2,719],[5,3,537],[5,4,619],[5,5,622],[5,6,656],[5,7,697],[5,8,702],
+               [6,0,651],[6,1,957],[6,2,703],[6,3,624],[6,4,642],[6,5,620],[6,6,579],[6,7,744],[6,8,711],
+               [7,0,457],[7,1,577],[7,2,540],[7,3,434],[7,4,465],[7,5,471],[7,6,479],[7,7,525],[7,8,581]],
+               [[0,0,612],[0,1,410],[0,2,245],[0,3,137],[0,4,182],[0,5,172],[0,6,179],[0,7,163],[0,8,221],
+               [1,0,524],[1,1,394],[1,2,236],[1,3,152],[1,4,163],[1,5,156],[1,6,156],[1,7,144],[1,8,226],
+               [2,0,494],[2,1,581],[2,2,410],[2,3,314],[2,4,336],[2,5,322],[2,6,341],[2,7,338],[2,8,338],
+               [3,0,589],[3,1,555],[3,2,517],[3,3,446],[3,4,441],[3,5,384],[3,6,395],[3,7,396],[3,8,448],
+               [4,0,404],[4,1,433],[4,2,494],[4,3,409],[4,4,442],[4,5,381],[4,6,397],[4,7,397],[4,8,427],
+               [5,0,455],[5,1,547],[5,2,389],[5,3,295],[5,4,291],[5,5,293],[5,6,307],[5,7,300],[5,8,290]],
+               [[0,0,231],[0,1,295],[0,2,266],[0,3,195],[0,4,305],[0,5,321],[0,6,212],[0,7,199],[0,8,203],
+               [1,0,206],[1,1,191],[1,2,163],[1,3,101],[1,4,156],[1,5,171],[1,6,125],[1,7,147],[1,8,141],
+               [2,0,404],[2,1,433],[2,2,494],[2,3,409],[2,4,442],[2,5,381],[2,6,397],[2,7,397],[2,8,427],
+               [3,0,455],[3,1,547],[3,2,389],[3,3,295],[3,4,291],[3,5,293],[3,6,307],[3,7,300],[3,8,290],
+               [4,0,309],[4,1,324],[4,2,392],[4,3,338],[4,4,361],[4,5,299],[4,6,300],[4,7,323],[4,8,346],
+               [5,0,400],[5,1,504],[5,2,354],[5,3,255],[5,4,262],[5,5,262],[5,6,266],[5,7,257],[5,8,256]],
+               [[0,0,165],[0,1,298],[0,2,258],[0,3,261],[0,4,333],[0,5,317],[0,6,280],[0,7,279],[0,8,277],
+               [1,0,165],[1,1,424],[1,2,283],[1,3,250],[1,4,376],[1,5,416],[1,6,410],[1,7,354],[1,8,324],
+               [2,0,5],[2,1,7],[2,2,7],[2,3,4],[2,4,6],[2,5,7],[2,6,7],[2,7,6],[2,8,0],
+               [3,0,1],[3,1,3],[3,2,3],[3,3,5],[3,4,2],[3,5,10],[3,6,3],[3,7,6],[3,8,5],
+               [4,0,309],[4,1,324],[4,2,392],[4,3,338],[4,4,361],[4,5,299],[4,6,300],[4,7,323],[4,8,346],
+               [5,0,400],[5,1,504],[5,2,354],[5,3,255],[5,4,262],[5,5,262],[5,6,266],[5,7,257],[5,8,256],
+               [6,0,305],[6,1,508],[6,2,491],[6,3,377],[6,4,419],[6,5,348],[6,6,364],[6,7,359],[6,8,362],
+               [7,0,396],[7,1,479],[7,2,378],[7,3,284],[7,4,285],[7,5,283],[7,6,281],[7,7,277],[7,8,280]],
+               [[0,0,177],[0,1,307],[0,2,273],[0,3,239],[0,4,260],[0,5,218],[0,6,233],[0,7,252],[0,8,235],
+               [1,0,149],[1,1,305],[1,2,237],[1,3,194],[1,4,186],[1,5,165],[1,6,205],[1,7,220],[1,8,186],
+               [2,0,0],[2,1,0],[2,2,1],[2,3,0],[2,4,0],[2,5,0],[2,6,0],[2,7,0],[2,8,0],
+               [3,0,2],[3,1,3],[3,2,3],[3,3,4],[3,4,2],[3,5,1],[3,6,2],[3,7,1],[3,8,0],
+               [4,0,309],[4,1,324],[4,2,392],[4,3,338],[4,4,361],[4,5,299],[4,6,300],[4,7,323],[4,8,346],
+               [5,0,400],[5,1,504],[5,2,354],[5,3,255],[5,4,262],[5,5,262],[5,6,266],[5,7,257],[5,8,256],
+               [6,0,243],[6,1,363],[6,2,335],[6,3,284],[6,4,276],[6,5,239],[6,6,263],[6,7,261],[6,8,275],
+               [7,0,322],[7,1,330],[7,2,278],[7,3,236],[7,4,242],[7,5,230],[7,6,212],[7,7,234],[7,8,262]]
+      ];
+      let junction10=[['路段11（北）', '路段12（北）', '路段13（南）', '路段14（南）', '路段41（西）', '路段42（西）', '路段43（东）','路段44（东）'],
+      ['路段37（北）', '路段32（北）', '路段47（南）', '路段48（南）', '路段43（西）', '路段44（西）', '路段31（东）','路段30（东）'],
+      ['路段40（北）', '路段23（北）', '路段39（南）', '路段38（南）', '路段31（西）', '路段30（西）', '路段25（东）','路段24（东）'],
+      ['路段34（北）', '路段33（北）', '路段36（南）', '路段35（南）', '路段25（西）', '路段24（西）', '路段27（东）','路段26（东）'],
+      ['路段13（北）', '路段14（北）', '路段28（西）', '路段29（西）', '路段16（东）','路段15（东）'],
+      ['路段47（北）', '路段48（北）', '路段16（西）', '路段15（西）', '路段18（东）','路段17（东）'],
+      ['路段39（北）', '路段38（北）', '路段1（南）', '路段2（南）','路段18（西）', '路段17（西）', '路段20（东）','路段19（东）'],
+      ['路段45（北）', '路段46（北）', '路段4（南）', '路段3（南）','路段20（西）', '路段19（西）', '路段22（东）','路段21（东）']
+      ];
+      let quarter10 = ['07:00', '08:00', '09:00', '10:00','11:00','12:00','13:00','14:00','15:00'];
+      let time11=['7:00', '8:00', '9:00',
+    '10:00', '11:00', '12:00', '13:00','14:00','15:00']
+      let junctionall11=[['道路12','道路44','道路13','道路41'],[ '道路37','道路31','道路48','道路43'],
+      [ '道路40','道路25','道路38','道路30'],['道路34','道路27','道路35','道路24'],['道路14','道路16','道路28'],
+      ['道路47','道路18','道路15'],[ '道路39','道路20','道路17'],[ '道路45','道路22','道路19']]
+      let data6=[[[0,0,8],[0,1,9],[0,2,9],[0,3,9],[0,4,8],[0,5,9],[0,6,9],[0,7,8],[0,8,8],
+               [1,0,2],[1,1,3],[0,2,6],[1,3,5],[1,4,5],[1,5,5],[1,6,4],[1,7,6],[1,8,6],
+               [2,0,12],[2,1,12],[2,2,12],[2,3,12],[2,4,12],[2,5,11],[2,6,11],[2,7,12],[2,8,11],
+               [3,0,8],[3,1,9],[3,2,9],[3,3,8],[3,4,9],[3,5,8],[3,6,9],[3,7,9],[3,8,9]],
+               [[0,0,8],[0,1,8],[0,2,10],[0,3,9],[0,4,9],[0,5,9],[0,6,9],[0,7,9],[0,8,8],
+               [1,0,13],[1,1,10],[0,2,9],[1,3,12],[1,4,10],[1,5,11],[1,6,12],[1,7,11],[1,8,11],
+               [2,0,10],[2,1,10],[2,2,11],[2,3,11],[2,4,12],[2,5,12],[2,6,11],[2,7,10],[2,8,12],
+               [3,0,11],[3,1,9],[3,2,9],[3,3,8],[3,4,9],[3,5,10],[3,6,10],[3,7,9],[3,8,9]],
+               [[0,0,9],[0,1,10],[0,2,10],[0,3,10],[0,4,10],[0,5,10],[0,6,11],[0,7,10],[0,8,10],
+               [1,0,11],[1,1,6],[0,2,10],[1,3,12],[1,4,8],[1,5,6],[1,6,7],[1,7,7],[1,8,5],
+               [2,0,10],[2,1,12],[2,2,12],[2,3,12],[2,4,12],[2,5,12],[2,6,12],[2,7,12],[2,8,12],
+               [3,0,5],[3,1,6],[3,2,6],[3,3,8],[3,4,8],[3,5,18],[3,6,9],[3,7,9],[3,8,7]],
+               [[0,0,6],[0,1,7],[0,2,8],[0,3,7],[0,4,7],[0,5,8],[0,6,7],[0,7,8],[0,8,8],
+               [1,0,6],[1,1,7],[0,2,5],[1,3,6],[1,4,6],[1,5,6],[1,6,6],[1,7,6],[1,8,7],
+               [2,0,10],[2,1,11],[2,2,12],[2,3,11],[2,4,11],[2,5,12],[2,6,12],[2,7,10],[2,8,11],
+               [3,0,10],[3,1,9],[3,2,10],[3,3,9],[3,4,9],[3,5,9],[3,6,10],[3,7,10],[3,8,9]],
+               [[0,0,12],[0,1,12],[0,2,12],[0,3,12],[0,4,12],[0,5,12],[0,6,12],[0,7,12],[0,8,12],
+               [1,0,12],[1,1,11],[0,2,10],[1,3,11],[1,4,11],[1,5,11],[1,6,11],[1,7,10],[1,8,11],
+               [2,0,7],[2,1,7],[2,2,6],[2,3,6],[2,4,6],[2,5,6],[2,6,6],[2,7,10],[2,8,6]],
+               [[0,0,9],[0,1,8],[0,2,10],[0,3,10],[0,4,11],[0,5,12],[0,6,11],[0,7,10],[0,8,8],
+               [1,0,0],[1,1,11],[0,2,14],[1,3,9],[1,4,2],[1,5,12],[1,6,0],[1,7,4],[1,8,0],
+               [2,0,12],[2,1,12],[2,2,13],[2,3,12],[2,4,11],[2,5,12],[2,6,13],[2,7,14],[2,8,12]],
+               [[0,0,14],[0,1,14],[0,2,12],[0,3,13],[0,4,13],[0,5,13],[0,6,13],[0,7,12],[0,8,13],
+               [1,0,6],[1,1,11],[0,2,11],[1,3,10],[1,4,11],[1,5,11],[1,6,11],[1,7,11],[1,8,12],
+               [2,0,0],[2,1,15],[2,2,7],[2,3,0],[2,4,9],[2,5,9],[2,6,0],[2,7,12],[2,8,7]],
+               [[0,0,10],[0,1,10],[0,2,10],[0,3,11],[0,4,11],[0,5,11],[0,6,10],[0,7,11],[0,8,10],
+               [1,0,5],[1,1,6],[0,2,6],[1,3,7],[1,4,6],[1,5,6],[1,6,7],[1,7,7],[1,8,6],
+                    [2,0,10],[2,1,13],[2,2,11],[2,3,14],[2,4,13],[2,5,12],[2,6,11],[2,7,12],[2,8,13]]];
+
+       function onChange(time){
+         var time1 = parseInt(time.substr(-1));
+         var imageall = document.getElementById('img1')
+                imageall.src = "../static/images/"+'路口'+time1+".png"}
+      let dataIndex = 0;
+       function mychart3(time){
+          console.log(time)
+           var time1 = parseInt(time.substr(-1));
+            option3 = {
+                color:'#fff',
+                textStyle:{color:'#fff'},
+                tooltip: {
+              trigger: 'item',
+               textStyle: {
+                  color: '#FFF'
+                },
+                backgroundColor: 'rgba(0,0,0, 0.6)',
+                borderColor: 'transparent',
+              triggerOn: 'mousemove'
+            },
+            animation: false,
+            series: [
+              {
+                type: 'sankey',
+                bottom: '10%',
+                top:'15%',
+                left:'2%',
+                right:'2%',
+                emphasis: {
+                  focus: 'adjacency'
+                },
+                data: road_juc_v[time1-1],
+                links: road_v[time1-1],
+                orient: 'vertical',
+                label: {
+                  position: 'top',
+                    color:'#fff'
+                },
+                itemStyle: {
+                 borderWidth: 1,   //设置节点的边界宽度
+                 color:'rgba(45,84,241,0.72)',  //设置节点颜色
+                 borderColor: 'rgba(255,255,255,0.58)'   //设置节点的边界颜色色
+              },
+              lineStyle: {
+                 //线性渐变，前四个参数分别是 x0, y0, x2, y2, 范围从 0 - 1，相当于在图形包围盒中的百分比
+                 color:new echarts.graphic.LinearGradient(0, 0, 1, 0, [{  //设置边为水平方向渐变
+                      offset: 0,
+                      color: 'rgba(45,84,241,0.72)'
+                 },{
+                      offset: 1,
+                      color: '#a3dffa'
+                 }]),
+                curveness: 0.5,  //设置边的曲度
+                opacity:0.5  //设置边的透明度
+              }
+              },
+
+          {
+                type: 'sankey',
+                bottom: '10%',
+                emphasis: {
+                  focus: 'adjacency'
+                },
+                data: road_juc[time1-1],
+                links: road_p[time1-1],
+                label: {
+                  position: 'right',
+                    color:'#fff'
+                },
+                itemStyle: {
+                 borderWidth: 1,   //设置节点的边界宽度
+                 color:'rgba(134,89,248,0.84)',  //设置节点颜色
+                 borderColor: 'rgba(255,255,255,0.58)'   //设置节点的边界颜色色
+              },
+              lineStyle: {
+                 //线性渐变，前四个参数分别是 x0, y0, x2, y2, 范围从 0 - 1，相当于在图形包围盒中的百分比
+                 color:new echarts.graphic.LinearGradient(0, 0, 1, 0, [{  //设置边为水平方向渐变
+                      offset: 0,
+                      color: 'rgba(134,89,248,0.84)'
+                 },{
+                      offset: 1,
+                      color: '#D0B5F9'
+                 }]),
+                curveness: 0.5,  //设置边的曲度
+                opacity:0.5  //设置边的透明度
+              }
+              }]
+              };
+
+             myChart3.setOption(option3);
+      }
+
+             function mychart1(time){
+             var time1 = parseInt(time.substr(-1));
+            var data_1 = data1[time1-1];
+
+            option1 = {
+                  grid:{
+              height: '75%',
+              bottom:'10%'
+            },
+               tooltip: {
+                  trigger: 'axis',
+                   backgroundColor: 'rgba(0,0,0, 0.6)',
+                borderColor: 'transparent',
+                   textStyle: {
+                  color: '#FFF'
+                }
+                },
+                toolbox: {
+                  feature: {
+                    dataZoom: {
+                      yAxisIndex: 'none'
+                    },
+                    restore: {},
+                    saveAsImage: {}
+                  }
+                },
+                xAxis: {
+                  type: 'category',
+                  boundaryGap: false,
+                  axisLabel : {
+                      show:true,
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        },
+                  name:'时间',//x轴名称
+                  nameTextStyle:{//x坐标轴名称的字体样式
+                      color:"#fff",
+                  },
+                  data: xdata1.slice(0, 4)
+                },
+                yAxis: {
+                  type: 'value',
+                   axisLabel : {
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        },
+                  name:'数量',//x轴名称
+                  nameTextStyle:{//x坐标轴名称的字体样式
+                      color:"#fff",
+                  },
+                  boundaryGap: [0, '100%'],
+                    axisLabel : {
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        },
+            // 控制网格线是否显示
+           splitLine: {
+                 show: true,
+                 //  改变轴线颜色
+                 lineStyle: {
+                      width: 0.5,
+                     // 使用深浅的间隔色
+                     color: ['#6deff3']
+                 }
+             },
+            //设置轴线的属性
+            axisLine:{
+                 lineStyle:{
+                     color:'#78c2ff',
+                 }
+             }
+                },
+                series: [
+                  {
+                    name: '等待车辆数',
+                    type: 'line',
+                    symbol: 'none',
+                    sampling: 'lttb',
+                    itemStyle: {
+                      color: '#4715e8'
+                    },
+                    areaStyle: {
+                      color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        {
+                          offset: 0,
+                          color: '#6915e8'
+                        },
+                        {
+                          offset: 1,
+                          color: '#5c95f5'
+                        }
+                      ])
+                    },
+                    data:data_1.slice(0, 8),
+                      smooth:true
+                  }
+                ]};
+             myChart1.setOption(option1);
+            setInterval(() => {if (dataIndex + 8 <= data_1.length) {
+                option1.xAxis.data = xdata1.slice(dataIndex, dataIndex + 8);
+                option1.series[0].data = data_1.slice(dataIndex, dataIndex + 8);
+                myChart1.setOption(option1);
+                dataIndex++;
+                if (dataIndex + 8 >= data_1.length){dataIndex = 0;}
+            }
+        }, 3000);}
+
+
+
+     function mychart2(time){
+             var time1 = parseInt(time.substr(-1));
+            var data_2 = data2[time1-1];
+            option2 = {
+                legend: {
+            y: '2%',
+            data: ['左车段', '上车段', '右车段', '下车段'],
+                 textStyle: { //图例文字的样式
+                        color: '#fff',
+  fontSize: 14,
+                    },
+        },
+        tooltip: {
+                textStyle: {
+                  color: '#FFF'
+                },
+                backgroundColor: 'rgba(0,0,0, 0.6)',
+                borderColor: 'transparent',
+            trigger: 'item',
+            axisPointer: {
+                type: 'shadow'
+            }
+        },
+        grid: {
+            left: '10%',
+            top: '20%',
+            right: '5%',
+            bottom: '10%'
+        },
+        xAxis: {
+            type: 'category',
+            data:[juc2[time1-1]],
+           boundaryGap: false,
+                    axisLabel: {
+                        textStyle: {
+                            color: '#ffffff'
+                        }
+                    },splitLine: {
+            show: true,
+            lineStyle: {
+              color: ['rgba(195,221,245,0.4)'],
+              width: 1,
+              type: 'dashed'
+            }
+          },
+        },
+        yAxis: {
+            /*min:-400,//可自定义y轴的最大和最小值
+            max:600,*/
+            type: 'value',
+            name: '数量',
+            splitArea: {
+                show: false
+            },
+          axisLabel : {
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        },
+          nameTextStyle:{//x坐标轴名称的字体样式
+              color:"#fff",
+          },
+           splitLine: {
+                 show: true,
+                 //  改变轴线颜色
+                 lineStyle: {
+                      width: 0.5,
+                     // 使用深浅的间隔色
+                     color: ['#6deff3']
+                 }
+             },
+            //设置轴线的属性
+            axisLine:{
+                 lineStyle:{
+                     color:'#78c2ff',
+                 }
+             }
+        },
+            series: [
+            {
+                name: '左车段',
+                type: 'boxplot',
+                data:  [data_2[0]],
+              itemStyle:{
+                  color:'rgba(87,35,255,0.66)',
+                borderColor:'#5723ff'
+              },
+        tooltip: {formatter: formatter}
+            },
+            {
+                name: '上车段',
+                type: 'boxplot',
+                data:  [data_2[1]],
+               itemStyle:{
+                  color:'rgba(159,49,245,0.68)',
+                  borderColor:'#af4aff'
+              },
+        tooltip: {formatter: formatter}
+            },
+            {
+                name: '右车段',
+                type: 'boxplot',
+                data:  [data_2[2]],
+               itemStyle:{
+                  color:'rgba(185,115,231,0.78)',
+                 borderColor:'#b973e7'
+              },
+        tooltip: {formatter: formatter}
+            },
+            {
+                name: '下车段',
+                type: 'boxplot',
+                data:  [data_2[3]],
+               itemStyle:{
+                  color:'rgba(208, 181, 249,0.73)',
+                 borderColor:'#D0B5F9'
+              },
+        tooltip: {formatter: formatter}
+            }
+        ]
+              };
+            function formatter(param) {
+        return [
+            '类别名称: ' + param.name,
+            // '上边界: ' + param.data[0],
+            '7:00: ' + param.data[1],
+            '8:00: ' + param.data[2],
+            '9:00: ' + param.data[3],
+            '10:00: ' + param.data[4],
+            '11:00: ' + param.data[5],
+            '12:00: ' + param.data[6],
+            '13:00: ' + param.data[7],
+            '14:00: ' + param.data[8],
+            '15:00: ' + param.data[9],
+        ].join('<br/>')}
+             myChart2.setOption(option2);
+         }
+
+         function mychart5(time){
+           var time1 = parseInt(time.substr(-1));
+           let chartdata=data5[time1-1].map(function (item) {return [item[1], item[0], item[2] || '-'];})
+            option5 = {
+                tooltip: {
+                  position: 'top',
+              textStyle: {
+                  color: '#FFF'
+                },
+                backgroundColor: 'rgba(0,0,0, 0.6)',
+                borderColor: 'transparent'
+                },
+                grid: {
+                  height: '60%',
+                  left:'20%',
+                  top: '5%'
+                },
+                xAxis: {
+                  type: 'category',
+                  data: quarter10,
+                  splitArea: {
+                    show: true
+                  },
+                  axisLabel : {
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        }
+                },
+                yAxis: {
+                  type: 'category',
+                  data: junction10[time1-1],
+                  splitArea: {
+                    show: true
+                  },
+                  axisLabel : {
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        }
+                },
+                visualMap: {
+                  min: 0,
+                  max: 800,
+                  calculable: true,
+                  orient: 'horizontal',
+                  left: '35%',
+                  bottom: '0%',
+                  inRange:{
+                    color: ['rgba(255,255,255,0.88)','#7b60ee', '#1d27c9']
+                  }
+
+
+                },
+                series: [
+                  {
+                    name: '路口路段流量',
+                    type: 'heatmap',
+                    data: chartdata,
+                    label: {
+                      show: false
+                    },
+                    emphasis: {
+                      itemStyle: {
+                        shadowBlur: 10,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                      }
+                    }
+                  }
+                ]
+              };
+
+             myChart5.setOption(option5);
+      }
+
+       function mychart6(time){
+           var time1 = parseInt(time.substr(-1));
+
+            option6 = {
+                 legend: {
+                data: ['路口各路段拥堵情况'],
+                left: 'right',
+                  textStyle: { //图例文字的样式
+                        color: '#fff',
+  fontSize: 15,
+                    },
+              },
+              polar: {},
+              tooltip: {
+                        textStyle: {
+                  color: '#FFF'
+                },
+                backgroundColor: 'rgba(0,0,0, 0.6)',
+                borderColor: 'transparent',
+                formatter: function (params) {
+                  return (
+                    params.value[2] +
+                    '为'+time11[params.value[1]]+'时的拥堵指数'
+                  );
+                }
+              },
+              angleAxis: {
+                type: 'category',
+                data: time11,
+                boundaryGap: false,
+                splitLine: {
+                  show: true
+                },
+                axisLine: {
+                  show: false
+                },
+                axisLabel : {
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        }
+              },
+              radiusAxis: {
+                type: 'category',
+                data: junctionall11[time1-1],
+                axisLine: {
+                  show: false
+                },
+                  grid:{bottom:'2%'},
+                axisLabel: {
+                  rotate: 45
+                },
+                  axisLabel : {
+                            textStyle: {
+                                color: 'rgba(255,255,255,0.86)'
+                            }
+                        }
+              },
+              series: [
+                {
+                  name: '路口各路段拥堵情况',
+                  type: 'scatter',
+                  coordinateSystem: 'polar',
+                  symbolSize: function (val) {
+                    return val[2] * 1.5;
+                  },
+                  data: data6[time1-1],
+                  animationDelay: function (idx) {
+                    return idx * 2;
+                  },
+                itemStyle:{
+
+                    color:new echarts.graphic.LinearGradient(
+                0, 0, 0, 1,
+                [
+                    {offset: 0, color: '#1d27c9'},
+                    {offset: 0.5, color: '#8a6ef6'},
+                    {offset: 1, color: 'rgba(255,255,255,0.88)'}
+                ]
+            )
+
+                }}
+              ]
+              };
+
+             myChart6.setOption(option6);
+      }
+            function random(lower, upper) {
+                return Math.floor(Math.random() * (upper - lower)) + lower;
+            }
+          function mychart4(time){
+           var time1 = parseInt(time.substr(-1));
+           var tim = document.getElementById('time_data').value - 1;
+           console.log(tim);
+          if (document.getElementById('chart9')) {
+          var labelOption = {
+                    show: false,
+                  }}
+            option4 = {
+              grid:{
+             top:'10%',
+             bottom:'4%',
+                  left:'5%',
+                  right:'5%'
+           },
+           tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'shadow'
+              },
+             textStyle: {
+                  color: '#FFF'
+                },
+                backgroundColor: 'rgba(0,0,0, 0.6)',
+                borderColor: 'transparent'
+            },
+            legend: {
+              data: junction9[time1-1],
+             textStyle: { //图例文字的样式
+                        color: '#fff',
+  fontSize: 15,
+                    }},
+            toolbox: {
+              show: true,
+              orient: 'vertical',
+              left: 'right',
+              top: 'center',
+              feature: {
+                mark: { show: true },
+                dataView: { show: true, readOnly: false },
+                magicType: { show: true, type: ['line', 'bar', 'stack'] },
+                restore: { show: true },
+                saveAsImage: { show: true }
+              }
+            },
+            xAxis: [
+              {
+                type: 'category',
+                name:'时间',
+                axisTick: { show: true },
+                data: quarter9[tim],
+                 axisLabel : {
+                            textStyle: {
+                                color: '#ffffff',
+                            }
+                        },
+                nameTextStyle:{//x坐标轴名称的字体样式
+              color:"#fff",
+          }
+              }
+            ],
+            yAxis: [
+              {
+                type: 'value',
+                 axisLabel : {
+                            textStyle: {
+                                color: '#ffffff'
+                            }
+                        },
+                    // 控制网格线是否显示
+            splitLine: {
+                 show: true,
+                 //  改变轴线颜色
+                 lineStyle: {
+                     // 使用深浅的间隔色
+                     color: ['#6deff3']
+                 }
+             },
+            //设置轴线的属性
+            axisLine:{
+                 lineStyle:{
+                     color:'#78c2ff',
+                 }
+             }
+              }
+            ],
+               series: [
+              {
+
+                name: junction9[time1-1][0],
+                type: 'bar',
+                barGap: 0,
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][0],
+                  itemStyle: {
+            normal: {
+                 barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#0a02ab'
+                 }, {
+                     offset: 1,
+                     color: '#4d82f5'
+                 }]), label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#5686ff'
+                    }
+                  }
+                  }}
+              },
+              {
+                name: junction9[time1-1][1],
+                type: 'bar',
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][1],
+                    itemStyle: {
+            normal: {
+                    barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#271ee0'
+                 }, {
+                     offset: 1,
+                     color: '#655ece'
+                 }])
+                , label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#8580ff'
+                    }
+                  }
+            }
+              }},
+              {
+                name: junction9[time1-1][2],
+                type: 'bar',
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][2],
+                    itemStyle: {
+            normal: {
+                          barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#1d99f2'
+                 }, {
+                     offset: 1,
+                     color: '#7eb2ee'
+                 }]),
+　　　　　　　label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#9df8f6'
+                    }
+                  }
+            }
+        }
+
+              },
+              {
+                name: junction9[time1-1][3],
+                type: 'bar',
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][3],
+                    itemStyle: {
+            normal: {
+                  barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#1d99f2'
+                 }, {
+                     offset: 1,
+                     color: '#7eb2ee'
+                 }]),
+                label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#6cfff0'
+                    }
+                  }
+　　　　　　　　//这里是重点
+
+            }
+        }
+              },
+                 {
+                name: junction9[time1-1][4],
+                type: 'bar',
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][4],
+                       itemStyle: {
+            normal: {
+                 barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#961DF2'
+                 }, {
+                     offset: 1,
+                     color: '#ba70f5'
+                 }]),
+                label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#c69df8'
+                    }
+                  }
+　　　　　　
+            }
+        }
+              },
+                {
+                name: junction9[time1-1][5],
+                type: 'bar',
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][5],
+                      itemStyle: {
+            normal: {
+                 barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#d454e8'
+                 }, {
+                     offset: 1,
+                     color: '#de87f3'
+                 }]),
+                label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#cc9df8'
+                    }
+                  }
+　　　　　　
+            }
+        }
+              },
+                {
+                name: junction9[time1-1][6],
+                type: 'bar',
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][6],
+                      itemStyle: {
+            normal: {
+                   barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#7951e8'
+                 }, {
+                     offset: 1,
+                     color: '#b99ff6'
+                 }]), label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#b99ff6'
+                    }
+            }
+
+　　　　　　　
+            }
+        }
+              },
+                {
+                name: junction9[time1-1][7],
+                type: 'bar',
+                label: labelOption,
+                emphasis: {
+                  focus: 'series'
+                },
+                data: data3[time1-1][tim][7],
+                      itemStyle: {
+            normal: {
+                  barBorderRadius: 15,
+       color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+         offset: 0,
+         color: '#6625e8'
+                 }, {
+                     offset: 1,
+                     color: '#9671ec'
+                 }]), label: {
+                show: true,
+                position: 'top', // 设置标签显示在柱状图的上方
+                    textStyle:{
+                    color:'#d69ff6'
+                    }
+            }
+
+　　　　　　　
+            }
+        }
+              }
+            ]
+              };
+
+             myChart4.setOption(option4);
+      }
+</script>
+   <script src="../static/js/index-D6WSED0G.js"></script>
+</body>
+</html>

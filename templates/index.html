@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录</title>
+    <link rel="stylesheet" href="../static/css/common.css" >
+    <link rel="stylesheet" href="../static/css/style1.css">
+    <link rel="stylesheet" href="../static/css/index.css">
+    <script src="../static/js/login.js"></script>
+</head>
+
+<body>
+
+    <div class="content">
+
+            <img src="../static/images/top.png" style="width: 100%;height: 75px;">
+           <h1 class="pulll_left" style="position: absolute;text-align: center;top: 13px;font-size: 30px;color: #ffffff;left:0; right:0;z-index:9999;">城市路口交通态势可视化系统</h1>
+
+        <div class="wrapper new-border" style="height: 700px;top: 50%;width: 650px">
+            <span class="j_1"></span>
+						  <span class="j_2"></span>
+						  <span class="j_3"></span>
+					 	  <span class="j_4"></span>
+
+            <div class="form-wrapper" >
+                <div class="login-form" style="position: absolute;top:80px;font-size: large">
+                    <div>
+                        <span class="form-title" style="font-size: xx-large">登录入口</span>
+                    </div>
+                    <div class="tips">
+                        <span>新用户？</span>
+                        <span class="signup-into">创建账号</span>
+                    </div>
+                    <form method="post" action="/user_login">
+                    <div class="form-wrapper">
+                        <div class="input-wrapper user">
+                            <input type="text" class="inputs" id="log_account" name="log_account">
+                        </div>
+                        <div class="input-wrapper pwd">
+                            <input type="password" class="inputs" id="log_password" name="log_password">
+                        </div>
+                         <div style="height: 30px;color: white">{{     message_log   }}</div>
+
+                        <a href="{{ url_for('user_register') }}" id="register" style="color: rgb(29, 144, 245)" > 注册</a>
+                        <input type="submit" id="log_submit" class="form-btn login-btn" value="登录">
+                      </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</body>
+
+
+</html>

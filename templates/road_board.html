@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>详情公告</title>
+     <link rel="stylesheet" href="../static/css/style1.css">
+    <!-- 平行坐标图的默认视觉样式 -->
+    <link rel="stylesheet" type="text/css" href="../static/css/d3.parcoords.css">
+    <script type="text/javascript" src="../static/js/jquery.js"></script>
+    <script type="text/javascript" src="../static/js/echarts.min.js"></script>
+    <script type="text/javascript" src="../static/js/Bubble.js"></script>
+      <script type="text/javascript" src="../static/js/expand_button3.js"></script>
+      <link rel="stylesheet" href="../static/css/common.css" >
+
+
+	<!--[if IE]>
+		<script src="http://libs.useso.com/js/html5shiv/3.7/html5shiv.min.js"></script>
+	<![endif]-->
+    <!-- 引入d3.js库 -->
+    <script src="../static/lib/d3.js"></script>
+    <!-- 引入d3的多笔刷选择模块 -->
+    <script src="../static/lib/d3.svg.multibrush.js"></script>
+    <!-- 引入d3的平行坐标模块 -->
+    <script src="../static/js/d3.parcoords.js"></script>
+        <style>
+    .ring {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #00e1ff;
+        border-radius: 50%;
+        position: relative;
+        animation: glow 2s linear infinite;
+    }
+
+    @keyframes glow {
+        0% {
+            box-shadow: 0 0 10px #00ffc4, 0 0 20px #00ffc4, 0 0 30px #00ffc4;
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(5,118,254,1), 0 0 30px rgba(5,118,254,1), 0 0 40px rgba(5,118,254,1);
+        }
+        100% {
+            box-shadow: 0 0 30px #07467e, 0 0 40px #07467e, 0 0 50px #07467e;
+        }
+    }
+    .photo-wall {
+    display: flex;
+    width: 100%;
+        height: 100%;
+        margin-top: 50px;
+    overflow: hidden;
+    position: relative;
+}
+
+.photo-wall img {
+    width: 100%;
+    transition: transform 0.5s ease;
+    max-width: 100%;
+    display: none; /* Hide all images initially */
+}
+
+.photo-wall img.active {
+    display: block; /* Only show the active image */
+}
+#upload {
+    display: inline-block;
+    width: 120px;
+    height: 10px;
+    font-size: medium;
+    margin-left: 0;
+    cursor: pointer;
+    background-color: #061042;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 10px;
+}
+
+#upload:hover {
+    background-color: #0089b3;
+}
+</style>
+</head>
+<body>
+ <div class="head clearfix">
+
+      <div class="menu menu2 pulll_left"  >
+      <ul style="position: absolute;top: 15px;left: 0px;">
+        <li><a  href="{{ url_for('road_sum') }}">路口概况</a></li>
+        <li><a href="{{ url_for('road_detail') }}">路口详情</a></li>
+        <li><a href="{{ url_for('road_board') }}">路口管理与说明</a></li>
+      </ul>
+
+        <div class="time" id="showTime" style="width: 200px;position: absolute;top: 15px;right: 70px;font-size: large">2018/6/12 17:00:12</div>
+		<script>
+        var t = null;
+            t = setTimeout(time,1000);//開始运行
+            function time()
+            {
+               clearTimeout(t);//清除定时器
+               dt = new Date();
+                var y=dt.getFullYear();
+                var mt=dt.getMonth()+1;
+                var day=dt.getDate();
+               var h=dt.getHours();//获取时
+               var m=dt.getMinutes();//获取分
+               var s=dt.getSeconds();//获取秒
+               document.getElementById("showTime").innerHTML = y+"/"+mt+"/"+day+" "+h+":"+m+":"+s+"";
+               t = setTimeout(time,1000); //设定定时器，循环运行
+            }
+        </script>
+    </div>
+  <img src="../static/images/top.png" style="width: 100%;height: 75px;">
+        <h1 class="pulll_left" style="position: absolute;left: 0;top: -10px;font-size: 30px">城市路口交通态势可视化系统</h1>
+         <div class="ring" style="position: absolute;right: 20px;top: 30px"></div>
+    </div>
+  <div class="mainbox">
+        <ul class="clearfix nav2">
+            <li style="width: 40%">
+                 <div class="new-border" style="height: 1180px">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+                 <div class="tit1" >路口消息公告</div>
+              <div class="boxnav" contenteditable="true" id="board" style="margin-top:10px;height: 1030px;background-color: rgba(122,119,119,0.35)">
+                1.路口1有车辆违规行为。
+              </div>
+                <input class="text" style="width: 600px;height: 50px;margin-bottom:5px;margin-top: 20px;margin-left: 20px" placeholder="请输入添加信息" id="addInput">
+               <button style="width: 13%;height: 50px;margin-top: 10px;font-size: 18px;margin-right: 0px" id="addBtn">添加</button>
+                 <button style="width: 13%;height: 50px;margin-top: 10px;font-size: 18px;margin-right: 0px" id="removeBtn">删除</button>
+                 </div>
+            </li>
+            <li style="width: 60%;height: 100%">
+                 <div class="new-border" style="height: 1180px">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+                 <div class="tit1" >相关功能与说明</div>
+                <div class="boxnav" id="board" style="height: 850px;background-color: rgba(47,45,45,0.34)">
+                       <button style="width: 150px;height: 60px;font-size: 20px;" id="button3" onclick="addContent()" >路口交通管理</button>
+                       <button style="width: 150px;height: 60px;font-size: 20px;" id="button1" onclick="addContent1()">系统说明</button>
+                    <div class="boxnav" id="con_board" style="height: 90%;width: 100%">
+
+                    </div>
+                </div>
+                 </div>
+            </li>
+        </ul>
+      <script src="../static/js/add_button.js"></script>
+      <script>
+          /*
+          function addContent() {
+            var con = document.getElementById("con_board");
+             con.innerHTML = ''
+            con.innerHTML += '<p>1.在路口交通管理中，交通信号灯是最重要的指示工具，在红灯停、绿灯行的原则下，驾驶员应严格遵守信号灯的指示，不得闯红灯。</p>' +
+         '<p>2.在路口交通管理中，行车道的选择非常重要，驾驶员应根据自己的行驶方向和目的地选择正确的车道，并在不同车道之间变换时注意提前打灯示意。</p>' +
+         '<p>3.在路口交通管理中，遇到交通拥堵或者交通事故时，驾驶员应保持冷静，按照交通警察或交通标志的指示，有序地排队等待通行。 </p>' +
+         '<p>4.在路口交通管理中，遇到行人过马路时，驾驶员应礼让行人，停车等待行人通过，不得在行人过马路时强行通行。</p>' +
+         '<p>5.在路口交通管理中，遇到紧急情况时，驾驶员应立即采取相应的应急措施，如紧急制动、变道避让等，确保自己和他人的安全。</p>'+` <div class="photo-wall">
+        <img src="../static/images/bg.jpg" alt="Photo 1" class="active">
+        <img src="../static/images/bg5.png" alt="Photo 2" >
+        <img src="../static/images/bg1.png" alt="Photo 3">
+    </div>
+    <button id="next" style="width: 150px;height: 40px;font-size: medium;  cursor: pointer;">Next</button>
+    <button id="prev" style="width: 150px;height: 40px;font-size: medium;margin-left: 50px;  cursor: pointer;">Previous</button>`
+
+        }*/
+
+       function addContent1() {
+            var con = document.getElementById("con_board");
+            con.innerHTML = '';
+            con.innerHTML += '<div class="text-s"> 1.界面设计</div>' +
+  '<div>应用框架得到的界面对路口概况与路口详情界面进行阐述。</div>'+
+'<div>针对信息统计数据，设计绘制的图形如下，对每一图形具体阐述：</div>'+
+                    '<div class="text-b"> a.交通对象统计环形图</div>'+
+ '<div>统计不同交通对象的数量，统计每小时路段系统中对象的数量总数。</div>'+
+                    '<div class="text-b">b.交通违规事件雷达图</div>'+
+'<div>统计每小时隔15mins内总的交通违规事件的数量，以雷达图显示不同违规事件数量变化。</div>'+
+                    '<div class="text-b">c.出行方式统计与词云</div>'+
+ '<div>统计每小时出行方式，提取出具体的驾驶行为特征用词云表示，后续链接具体的驾驶行为介绍。。</div>'+
+                    '<div class="text-b">d.交通流量变化折线图</div>'+
+ '<div>统计每小时隔5mins不同交通对象流量的变化，用折线图使变化更直观。</div>'+
+                    '<div class="text-b">f.交通热力图</div>'+
+ '<div>针对该数据信息建立道路热力图，直观表示路段运行情况。</div>'+
+                    '<div class="text-b">g.驾驶行为统计</div>'+
+ '<div>统计每小时的驾驶行为事件，展示驾驶行为事件数量排序说明哪一驾驶行为最普遍，并展示比较不同路口的驾驶行为事件占比，说明哪一路口车辆行为更多变。。</div>'+
+                    '<div class="text-b">h.道路平行健康度</div>'+
+ '<div>平行坐标展示不同路段的相关指标，做出对路段的综合评价。</div>'+
+
+                '<div> 以上为路口概况界面图形，下面说明路口详情界面图形设计：</div>'+
+                    '<div class="text-b">a.排队车辆统计</div>'+
+ '<div>统计总时间段每一路口排队车辆数，用柱状面积图表示。</div>'+
+                    '<div class="text-b">b.断面车流统计</div>'+
+ '<div>根据每一十字路口特征，将路口按上北下南定位方法标识出路口包含的四个方向车流量，统计四个方向上的车流量，说明各个方向的道路状况。</div>'+
+                    '<div class="text-b">c.路口车流流向桑基图</div>'+
+ '<div>统计每一路口车流的流向方向，用桑基图形象表示流向信息，说明路口车流的驾驶方向趋势。</div>'+
+                    '<div class="text-b">d.交通流量预测</div>'+
+ '<div>按每小时隔15mins对每一路口车流量进行预测，用柱状折线切换工具作图，同时用仪表盘显示每个方向的流量统计。</div>'+
+                    '<div class="text-b">f.交通流量热力图</div>'+
+ '<div>显示每个路口组成路段上的交通流量，反映路段交通状况。</div>'+
+                    '<div class="text-b">g.路口拥堵程度</div>'+
+ '<div>将路口各时间段的拥堵程度用点状图表示出来，点越大表示该时间点路段拥堵越严重。</div>'+
+                    '<div class="text-b">h.驾驶行为显示表</div>'+
+ '<div>表将具体呈现不同驾驶行为数据，可以定位到具体交通对象的id以便后续的车辆监管，该功能将在后续进行实现。</div>'+
+
+                    '<div class="text-s">2.交互设计</div>'+
+  '<div> 通过选择选择框中的时间、路口信息得到不同时间段路口的交通态势情况，后续将添加时间控制以控制场景还原中交通对象的运行。</div>'+
+
+                    '<div class="text-s">3.三维场景设计</div>'+
+  '<div>完成对场景的初步搭建，传入对象数据，后续完成对对象的运动渲染，并将其嵌入前端框架中。</div>'
+        }
+      </script>
+
+    </div>
+</body>
+</html>

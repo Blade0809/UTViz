@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册</title>
+    <link rel="stylesheet" href="../static/css/common.css" >
+    <link rel="stylesheet" href="../static/css/style1.css">
+    <link rel="stylesheet" href="../static/css/index.css">
+    <script src="../static/js/login.js"></script>
+</head>
+
+<body >
+    <div class="content">
+         <img src="../static/images/top.png" style="width: 100%;height: 75px;">
+           <h1 class="pulll_left" style="position: absolute;text-align: center;top: 13px;font-size: 30px;color: #ffffff;left:0; right:0;z-index:9999;">城市路口交通态势可视化系统</h1>
+        <div class="wrapper new-border" style="height: 700px;top: 50%;width: 650px">
+            <span class="j_1"></span>
+						  <span class="j_2"></span>
+						  <span class="j_3"></span>
+					 	  <span class="j_4"></span>
+            <div class="form-wrapper">
+                <div class="login-form" style="position: absolute;top: 80px;font-size: large">
+                    <form method="post">
+                    <div>
+                        <span class="form-title" style="font-size: xx-large">注册入口</span>
+                    </div>
+                    <div class="tips">
+                        <span>已经拥有账号？</span>
+                        <span class="login-into">登录</span>
+                    </div>
+                    <div class="form-wrapper">
+                        <div class="input-wrapper user">
+                            <input type="text" class="inputs" id="re_account" name="re_account">
+                        </div>
+                        <div class="input-wrapper pwd">
+                            <input type="password" class="inputs" id="re_password" name="re_password">
+                        </div>
+                         <div style="height: 40px;color: white">{{     message_res   }}</div>
+                           <a href="{{ url_for('user_login') }}" id="register" style="color: rgb(29, 144, 245)" > 登录</a>
+                        <input type="submit" id="res_submit"  class="form-btn" value="创建账号">
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+
+</html>

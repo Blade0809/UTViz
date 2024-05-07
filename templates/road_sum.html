@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>路口概况</title>
+    <link rel="stylesheet" href="../static/css/style1.css">
+    <!-- 平行坐标图的默认视觉样式 -->
+    <link rel="stylesheet" type="text/css" href="../static/css/d3.parcoords.css">
+    <script type="text/javascript" src="../static/js/jquery.js"></script>
+    <script type="text/javascript" src="../static/js/echarts.min.js"></script>
+    <script type="text/javascript" src="../static/js/Bubble.js"></script>
+     <link rel="stylesheet" href="../static/css/common.css" >
+    <!-- 引入d3.js库 -->
+    <script src="../static/lib/d3.js"></script>
+    <!-- 引入d3的多笔刷选择模块 -->
+    <script src="../static/lib/d3.svg.multibrush.js"></script>
+    <!-- 引入d3的平行坐标模块 -->
+    <script src="../static/js/d3.parcoords.js"></script>
+
+        <style>
+            select:focus {
+  background-color: rgba(73, 73, 73, 0.45); /* 修改下拉列表的背景色 */
+}
+    .ring {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #00e1ff;
+        border-radius: 50%;
+        position: relative;
+        animation: glow 2s linear infinite;
+    }
+
+    @keyframes glow {
+        0% {
+            box-shadow: 0 0 10px #00ffc4, 0 0 20px #00ffc4, 0 0 30px #00ffc4;
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(5,118,254,1), 0 0 30px rgba(5,118,254,1), 0 0 40px rgba(5,118,254,1);
+        }
+        100% {
+            box-shadow: 0 0 30px #07467e, 0 0 40px #07467e, 0 0 50px #07467e;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div>
+    <div class="head clearfix">
+
+      <div class="menu menu2 pulll_left"  >
+      <ul style="position: absolute;top: 25px;left: 0px;">
+        <li><a  href="{{ url_for('road_sum') }}">路口概况</a></li>
+        <li><a href="{{ url_for('road_detail') }}">路口详情</a></li>
+        <li><a href="{{ url_for('road_board') }}">路口管理与说明</a></li>
+      </ul>
+
+        <div class="time" id="showTime" style="width: 200px;position: absolute;top: 15px;right: 70px;font-size: large">2018/6/12 17:00:12</div>
+		<script>
+        var t = null;
+            t = setTimeout(time,1000);//開始运行
+            function time()
+            {
+               clearTimeout(t);//清除定时器
+               dt = new Date();
+                var y=dt.getFullYear();
+                var mt=dt.getMonth()+1;
+                var day=dt.getDate();
+               var h=dt.getHours();//获取时
+               var m=dt.getMinutes();//获取分
+               var s=dt.getSeconds();//获取秒
+               document.getElementById("showTime").innerHTML = y+"/"+mt+"/"+day+" "+h+":"+m+":"+s+"";
+               t = setTimeout(time,1000); //设定定时器，循环运行
+            }
+        </script>
+    </div>
+<img src="../static/images/top.png" style="width: 100%;height: 75px;">
+        <h1 class="pulll_left" style="position: absolute;left: 0;top: -10px;font-size: 30px">城市路口交通态势可视化系统</h1>
+         <div class="ring" style="position: absolute;right: 20px;top: 30px"></div>
+        </div>
+      <!--整体块-->
+      <div class="mainbox" style="border: none">
+        <!--左上部分-->
+        <div class="boxnav" style="border: none">
+        <ul class="clearfix nav1" style="margin: 5px">
+          <li style="width: 24%;">
+            <!--控制台-->
+            <div class="new-border">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit" style="">控制台</div>
+              <div class="boxnav" style="height: 160px;font-size: 20px">
+                <label style="display:inline;font-size: 20px;font-weight: normal;position: absolute;top: 70px;left: 20px">选择时间:</label>
+              <select id="time_data" style="font-size: 20px;width: 60%;position: absolute;top: 75px;left: 120px">
+                <option disabled value="">-请选择-</option>
+                <option value="1">7:00:00</option>
+                  <option value="2">8:00:00</option>
+                  <option value="3">9:00:00</option>
+                  <option value="4">10:00:00</option>
+                  <option value="5">11:00:00</option>
+                  <option value="6">12:00:00</option>
+                  <option value="7">13:00:00</option>
+                  <option value="8">14:00:00</option>
+                  <option value="9">15:00:00</option>
+              </select>
+                <br>
+                 <label style="font-size: 20px;font-weight: normal;position: absolute;top: 110px;left: 20px">选择路口:</label>
+              <select id="juc_data" style="font-size: 20px;width: 60%;position: absolute;top: 115px;left: 120px">
+                <option disabled value="">-请选择-</option>
+                <option value="1">路口1</option>
+                  <option value="2">路口2</option>
+                  <option value="3">路口3</option>
+                  <option value="4">路口4</option>
+                  <option value="5">路口5</option>
+                  <option value="6">路口6</option>
+                  <option value="7">路口7</option>
+                  <option value="8">路口8</option>
+              </select>
+
+              </div>
+            </div>
+            <!--交通对象数量统计-->
+            <div class="new-border" style="margin-top: 20px">
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">交通对象数量统计</div>
+              <div class="boxnav" style="height: 280px;" id="chart1">
+                <!--放入图-->
+              </div>
+
+              <div class="leidanav leidanav2" style="height: 50px">
+				<ul class="clearfix">
+					<li><span>总数</span><p id="allnumber"></p></li>
+					<li><span>机动车</span><p id="carnumber"></p></li>
+					<li><span>非机动车</span><p id="nocarnumber"></p></li>
+					</ul>
+				</div>
+            </div>
+
+          </li>
+          <li style="width: 52%;">
+            <div class="new-border1" >
+                 <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+               <div class="tit">路口三维场景</div>
+              <div class="boxnav" style="height: 625px" id="3d"></div>
+
+
+            </div>
+
+          </li>
+          <li style="width: 24%;" >
+            <div class="new-border">
+                  <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">总览路况热力图</div>
+              <div class="boxnav"  style="height: 210px">
+               <img src="../static/images/1.png" id="img1">
+              </div>
+               <div class="leidanav leidanav3" style="margin-bottom: 0;">
+              <ul class="clearfix" >
+                <li><span>拥堵路口</span><p id="jam_juc"></p></li>
+                <li><span>拥堵时段</span><p id="jam_time"></p></li>
+                </ul>
+              </div>
+            </div>
+              <div class="new-border" style="margin-top: 20px">
+                    <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">路口违规次数统计</div>
+               <div class="boxnav" style="height: 232px" id="chart3">
+                <!--放入图-->
+
+                          </div>
+            </div>
+          </li>
+        </ul></div>
+        <div class="boxnav" style="border:none;padding: 10px 0;position:absolute;left:20px;top:690px;width: 99%;height: 580px;opacity: 1">
+          <ul class="clearfix nav2">
+            <li style="width: 23.7%;padding-right: 0">
+                <div class="new-border">
+                    <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">交通违规事件统计雷达图</div>
+              <div class="boxnav" id='chart2' style="height: 220px">
+                <!--放入图-->
+              </div></div>
+                 <div class="new-border" style="margin-top: 20px">
+                <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+                <div class="tit1">群体性驾驶趋势图</div>
+              <div class="boxnav" style="height: 240px">
+                <!--放入图-->
+                	<div style="height: 200px; float: left; width: 40%; padding: 0 5px;">
+              <div class="tit02 text-b" style="font-size: 18px">出行方式</div>
+                        <div class="huati" style="margin-top: -20px">
+                        <ul >
+                          <li style="font-size: 18px">1.非机动车  <span class="text-s" id="box1_d"></span></li>
+                          <li style="font-size: 18px">2.机动车     <span class="text-s" id="box2_d"></span></li>
+                          <li style="font-size: 18px" id="box3"> <span class="text-d" id="box3_d"></span></li>
+                          <li style="font-size: 18px" id="box4"><span class="text-d" id="box4_d"></span></li>
+                          </ul>
+                        </div>
+                  </div>
+                <div style="height: 190px; float: left; width: 60%">
+                <div class="text-b tit02" style="text-align: center;font-size: 18px">类型 — 云</div>
+                   <div class="tagcloud" style="margin-left: 10px">
+               <a class="b01 co01" target="_blank" href="https://www.zhihu.com/question/291879466">行驶缓慢</a>
+               <a class="b02 co02" target="_blank" href="https://www.zhihu.com/question/291879466">行驶急速</a>
+               <a class="b04 co03" target="_blank" style="margin-left: 80px;position: relative;top: -100px" href="https://club.m.autohome.com.cn/bbs/thread/b46213adbfca1a1d/30846951-2.html">急加急减</a>
+               <a class="b03 co04" target="_blank" style="margin-left: 100px;position: relative;top: -100px"  href="https://www.icauto.com.cn/baike/71/714987.html">变道</a>
+                   </div>
+                    <script type="text/javascript">
+                /*3D标签云*/
+                tagcloud({
+                    selector: ".tagcloud",  //元素选择器
+                    fontsize: 8,       //基本字体大小, 单位px
+                    radius:20,         //滚动半径, 单位px 页面宽度和高度的五分之一
+                    mspeed: "slow",   //滚动最大速度, 取值: slow, normal(默认), fast
+                    ispeed: "slow",   //滚动初速度, 取值: slow, normal(默认), fast
+                    direction: 360,     //初始滚动方向, 取值角度(顺时针360): 0对应top, 90对应left, 135对应right-bottom(默认)...
+                    keep: false          //鼠标移出组件后是否继续随鼠标滚动, 取值: false, true(默认) 对应 减速至初速度滚动, 随鼠标滚动
+                });
+            </script>
+                </div>
+              </div></div>
+            </li>
+             <li style="width: 51.8%;margin-top: 90px" >
+               <div class="new-border" >
+                      <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+                <div class="tit">交通流量变化折线图</div>
+              <div class="boxnav" style="height: 437px;width: 100%" id="chart4">
+                <!--放入图-->
+              </div></div>
+             </li>
+             <li style="width: 23.7%;padding-left: 0">
+                 <div class="new-border" style="height: 573px;">
+                    <span class="j_1"></span>
+                <span class="j_2"></span>
+                <span class="j_3"></span>
+                <span class="j_4"></span>
+              <div class="tit">道路平行健康度</div>
+              <div  style="height: 480px;width:100%;color: white;font-weight: bold;margin-top: 5px" id="chart5" class="parcoords">
+<!--加载外部CSV数据,创建了一个自定义的定量颜色缩放尺度,使用L*a*b颜色空间的插值,并启用了笔刷选择 -->
+    <p>
+        <!-- 定义笔刷选择模式和逻辑关系的选择框 -->
+        <p>
+            <label for="sltBrushMode">选择笔刷:</label>
+            <select id="sltBrushMode" style="position: absolute;left: 100px;top:55px">
+        </select>
+            <!-- <label id="lblPredicate" for="sltPredicate">Predicate:</label>
+            <select id="sltPredicate">
+        <option>AND</option>
+        <option>OR</option>
+      </select> -->
+            <button id="btnReset" style="width: 100px;font-size: 12px;height: 30px;margin-top: 5px;position: absolute;right: 2px">重置笔刷</button>
+        </p>
+        <!-- 关于二维笔刷选择的说明 -->
+        <p id="pStrums" style="visibility: hidden;margin-top: 15px"></p>
+    </p>
+              </div></div>
+            </li>
+  <script>
+                    // 定义一个定量颜色缩放尺度,基于L*a*b颜色空间插值
+                    // 将[9, 50]的域映射到["steelblue", "brown"]范围
+                    // 用于映射"economy (mpg)"字段到颜色
+                    var blue_to_brown = d3.scale.linear()
+                        .domain([1, 5])
+                        .range(["#d1b0ee", "#411d8d"])
+                        .interpolate(d3.interpolateLab);
+                    //根据"economy (mpg)"值返回颜色
+                    var color = function(d) {
+                        return blue_to_brown(d['道路健康度']);
+                    };
+
+                    // 初始化平行坐标图,设置颜色映射和透明度
+                    var parcoords = d3.parcoords()("#chart5")
+                        .color(color)
+                        .alpha(0.4);
+
+                    let filteredData;
+                    // 加载csv数据,设置图表参数
+                    // d3.csv('data/cars.csv', function(data) {
+                    d3.csv('../static/data/new_roadhealthAlldata.csv', function(data) {
+                        filteredData = data.filter(d => d.hour === '1');
+
+                        parcoords
+                        // 绑定数据
+                            .data(data)
+                            // 隐藏name轴
+                            .hideAxis(["velocity", "hour", "safety_ratio", "roadHealth_level", "roadHealth_ratio"])
+                            // 设置组合模式
+                            .composite("darker")
+                            // 渲染
+                            .render()
+                            // 开启阴影
+                            .shadows()
+                            // 启用重排轴
+                            .reorderable()
+                            // 设置笔刷选择模式为1D轴
+                            .brushMode("1D-axes"); // enable brushing
+                    });
+
+                    // 为笔刷模式选择框添加选项
+                    var sltBrushMode = d3.select('#sltBrushMode')
+                    sltBrushMode.selectAll('option')
+                        .data(parcoords.brushModes())
+                        .enter()
+                        .append('option')
+                        .text(function(d) {
+                            return d;
+                        });
+                    // 选择框change事件,更新笔刷模式
+                    sltBrushMode.on('change', function() {
+                        parcoords.brushMode(this.value);
+                        // 根据模式显示或隐藏相关内容
+                        switch (this.value) {
+                            case 'None':
+                                d3.select("#pStrums").style("visibility", "hidden");
+                                d3.select("#lblPredicate").style("visibility", "hidden");
+                                d3.select("#sltPredicate").style("visibility", "hidden");
+                                d3.select("#btnReset").style("visibility", "hidden");
+                                break;
+                            case '2D-strums':
+                                d3.select("#pStrums").style("visibility", "visible");
+                                break;
+                            default:
+                                d3.select("#pStrums").style("visibility", "hidden");
+                                d3.select("#lblPredicate").style("visibility", "visible");
+                                d3.select("#sltPredicate").style("visibility", "visible");
+                                d3.select("#btnReset").style("visibility", "visible");
+                                break;
+                        }
+                    });
+                    // 设置默认笔刷模式为1D轴
+                    sltBrushMode.property('value', '1D-axes');
+                    // 重置按钮点击事件
+                    d3.select('#btnReset').on('click', function() {
+                            parcoords.brushReset();
+                        })
+                        // 逻辑关系change事件
+                        // d3.select('#sltPredicate').on('change', function() {
+                        //     parcoords.brushPredicate(this.value);
+                        // });
+                        //下拉按钮选择事件
+                    d3.select('#time_data').on('change', function() {
+                        var selectedTime = this.value;
+                        d3.csv('../static/data/new_roadhealthAlldata.csv', function(data) {
+                            var filteredData = data.filter(function(d) {
+                                return d.hour === selectedTime;
+                            });
+                            parcoords.data(filteredData).render();
+                        });
+                    });
+
+                    //默认展示hour=7的数据
+                    d3.select(window).on("load", function() {
+
+                        let selectElement = document.getElementById('time_data');
+                        selectElement.dispatchEvent(new Event('change'));
+
+
+                    });
+                </script>
+          </ul>
+        </div>
+      </div>
+  </div>
+ <script>
+                    //选择时间传入数据
+                $(function () {//使用on进行事件绑定事件。
+                    mychart1('time1');
+                    mychart2('time1');
+                    mychart3('time1');
+                    mychart4('time1');
+
+                    onChange('time1');
+                    $("select").on('click',function(){
+                        if($("select").val()==1){
+                        mychart1('time1');
+                        mychart2('time1');
+                        mychart3('time1');
+                        mychart4('time1');
+
+                        onChange('time1');
+                        }
+                        else if($("select").val()==2){
+                        mychart1('time2');
+                        mychart2('time2');
+                        mychart3('time2');
+                        mychart4('time2');
+
+                        onChange('time2');
+                        }
+                        else if($("select").val()==3){
+                        mychart1('time3');
+                        mychart2('time3');
+                        mychart3('time3');
+                        mychart4('time3');
+
+                        onChange('time3');
+                        }
+                        else if($("select").val()==4){
+                        mychart1('time4');
+                        mychart2('time4');
+                        mychart3('time4');
+                        mychart4('time4');
+
+                        onChange('time4');
+                        }
+                        else if($("select").val()==5){
+                        mychart1('time5');
+                        mychart2('time5');
+                        mychart3('time5');
+                        mychart4('time5');
+
+                        onChange('time5');
+                        }
+                        else if($("select").val()==6){
+                        mychart1('time6');
+                        mychart2('time6');
+                        mychart3('time6');
+                        mychart4('time6');
+
+                        onChange('time6');
+                        }
+                        else if($("select").val()==7){
+                        mychart1('time7');
+                        mychart2('time7');
+                        mychart3('time7');
+                        mychart4('time7');
+
+                        onChange('time7');
+                        }
+                        else if($("select").val()==8){
+                        mychart1('time8');
+                        mychart2('time8');
+                        mychart3('time8');
+                        mychart4('time8');
+
+                        onChange('time8');
+                        }
+                        else if($("select").val()==9){
+                        mychart1('time9');
+                        mychart2('time9');
+                        mychart3('time9');
+                        mychart4('time9');
+
+                        onChange('time9');
+                        }
+                            })  ;
+                    $("#time_sec").on('click',function(){
+                        myChart1.clear();  //清空原来的图表
+                        myChart2.clear();
+                        myChart3.clear();
+                        myChart4.clear();
+
+                        mychart1('time_sec');//重新加载图表，之前必须要清空原来的，否则没有动画效果
+                        mychart2('time_sec');
+                        mychart3('time_sec');
+                        mychart4('time_sec');
+                    });
+                });
+                  // 基于准备好的dom，初始化echarts实例
+            var myChart1 = echarts.init(document.getElementById('chart1'));
+            var myChart2 = echarts.init(document.getElementById('chart2'));
+            var myChart3 = echarts.init(document.getElementById('chart3'));
+            var myChart4 = echarts.init(document.getElementById('chart4'));
+
+         let data1 = [
+            [{
+                value: 39138,
+                name: '小型车辆'
+            }, {
+                value: 29467,
+                name: '行人'
+            }, {
+                value: 62661,
+                name: '非机动车'
+            }, {
+                value: 1058,
+                name: '卡车'
+            }, {
+                value: 1002,
+                name: '客车'
+            }, {
+                value: 2295,
+                name: '人力车'
+            }],
+            [{
+                value: 56284,
+                name: '小型车辆'
+            }, {
+                value: 65908,
+                name: '行人'
+            }, {
+                value: 74976,
+                name: '非机动车'
+            }, {
+                value: 1175,
+                name: '卡车'
+            }, {
+                value: 848,
+                name: '客车'
+            }, {
+                value: 1664,
+                name: '人力车'
+            }],
+            [{
+                value: 43136,
+                name: '小型车辆'
+            }, {
+                value: 44520,
+                name: '行人'
+            }, {
+                value: 41773,
+                name: '非机动车'
+            }, {
+                value: 1511,
+                name: '卡车'
+            }, {
+                value: 746,
+                name: '客车'
+            }, {
+                value: 2189,
+                name: '人力车'
+            }],
+            [{
+                value: 34586,
+                name: '小型车辆'
+            }, {
+                value: 31706,
+                name: '行人'
+            }, {
+                value: 38090,
+                name: '非机动车'
+            }, {
+                value: 1046,
+                name: '卡车'
+            }, {
+                value: 991,
+                name: '客车'
+            }, {
+                value: 3136,
+                name: '人力车'
+            }],
+            [{
+                value: 39652,
+                name: '小型车辆'
+            }, {
+                value: 52515,
+                name: '行人'
+            }, {
+                value: 57133,
+                name: '非机动车'
+            }, {
+                value: 1519,
+                name: '卡车'
+            }, {
+                value: 1152,
+                name: '客车'
+            }, {
+                value: 2820,
+                name: '人力车'
+            }],
+            [{
+                value: 38761,
+                name: '小型车辆'
+            }, {
+                value: 64512,
+                name: '行人'
+            }, {
+                value: 46606,
+                name: '非机动车'
+            }, {
+                value: 984,
+                name: '卡车'
+            }, {
+                value: 822,
+                name: '客车'
+            }, {
+                value: 2792,
+                name: '人力车'
+            }],
+            [{
+                value: 36847,
+                name: '小型车辆'
+            }, {
+                value: 40185,
+                name: '行人'
+            }, {
+                value: 38801,
+                name: '非机动车'
+            }, {
+                value: 1225,
+                name: '卡车'
+            }, {
+                value: 1010,
+                name: '客车'
+            }, {
+                value: 2475,
+                name: '人力车'
+            }],
+            [{
+                value: 41621,
+                name: '小型车辆'
+            }, {
+                value: 29002,
+                name: '行人'
+            }, {
+                value: 30547,
+                name: '非机动车'
+            }, {
+                value: 1294,
+                name: '卡车'
+            }, {
+                value: 1135,
+                name: '客车'
+            }, {
+                value: 1981,
+                name: '人力车'
+            }],
+            [{
+                value: 40736,
+                name: '小型车辆'
+            }, {
+                value: 29696,
+                name: '行人'
+            }, {
+                value: 35095,
+                name: '非机动车'
+            }, {
+                value: 897,
+                name: '卡车'
+            }, {
+                value: 907,
+                name: '客车'
+            }, {
+                value: 2676,
+                name: '人力车'
+            }]
+        ]
+        let chart1allnumber = [135631, 200855, 133875, 109555, 154791, 154177, 120548, 105580, 110007];
+        let chart1carnumber = [43493, 59971, 47582, 43263, 45143, 43359, 41557, 46031, 45216];
+        let chart1nocarnumber = [62661, 74976, 41773, 38090, 57133, 46606, 38801, 30547, 35095];
+        let data2 = [
+            [{
+                value: [34, 321, 4880, 197, 6, 64],
+                name: '7:00-7:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [42, 400, 7718, 276, 15, 159],
+                name: '7:15-7:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [67, 449, 8043, 274, 13, 171],
+                name: '7:30-7:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [30, 496, 7982, 362, 22, 113],
+                name: '7:45-8:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [60, 576, 8933, 340, 29, 114],
+                name: '8:00-8:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [82, 738, 11009, 347, 36, 156],
+                name: '8:15-8:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [99, 728, 10488, 445, 24, 160],
+                name: '8:30-8:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [95, 714, 10633, 451, 43, 141],
+                name: '8:45-9:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [46, 684, 9703, 422, 34, 99],
+                name: '9:00-9:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [40, 561, 8598, 405, 24, 95],
+                name: '9:15-9:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [56, 507, 8608, 269, 16, 87],
+                name: '9:30-9:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [52, 481, 7898, 242, 20, 67],
+                name: '9:45-10:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [39, 448, 6908, 242, 23, 80],
+                name: '10:00-10:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [35, 440, 6785, 266, 14, 72],
+                name: '10:15-10:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [49, 457, 7054, 359, 13, 78],
+                name: '10:30-10:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [36, 440, 6528, 253, 13, 59],
+                name: '10:45-11:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [51, 482, 6763, 265, 14, 63],
+                name: '11:00-11:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [63, 546, 7685, 274, 18, 100],
+                name: '11:15-11:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [62, 607, 7604, 304, 14, 80],
+                name: '11:30-11:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [77, 586, 7506, 283, 21, 86],
+                name: '11:45-12:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [80, 566, 7253, 259, 11, 70],
+                name: '12:00-12:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [64, 556, 7312, 278, 18, 60],
+                name: '12:15-12:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [72, 501, 6692, 252, 17, 69],
+                name: '12:30-12:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [62, 498, 6842, 314, 20, 72],
+                name: '12:45-13:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [64, 521, 7201, 278, 7, 83],
+                name: '13:00-13:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [46, 486, 7099, 252, 16, 62],
+                name: '13:15-13:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [50, 497, 6896, 251, 11, 80],
+                name: '13:30-13:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [61, 454, 6826, 218, 15, 83],
+                name: '13:45-14:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [42, 489, 7260, 248, 19, 81],
+                name: '14:00-14:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [41, 490, 7177, 241, 11, 83],
+                name: '14:15-14:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [42, 440, 6788, 289, 17, 72],
+                name: '14:30-14:45',
+                itemStyle: {
+                    color: '#b09aef'
+                }
+            }, {
+                value: [18, 517, 7619, 289, 16, 75],
+                name: '14:45-15:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }],
+            [{
+                value: [43, 528, 8079, 292],
+                name: '15:00-15:15',
+                itemStyle: {
+                    color: '#1D72F2'
+                }
+            }, {
+                value: [44, 519, 7280, 258, 14, 97],
+                name: '15:15-15:30',
+                itemStyle: {
+                    color: '#b973e7'
+                }
+            }, {
+                value: [34, 478, 6980, 280, 7, 65],
+                name: '15:30-15:45',
+                itemStyle: {
+                    color: '#05f8d6'
+                }
+            }, {
+                value: [45, 570, 9355, 288, 26, 87],
+                name: '15:45-16:00',
+                itemStyle: {
+                    color: '#1DB5F2'
+                }
+            }]
+        ]
+        let data3 = [
+            [{
+                value: 6038,
+                name: '路口1'
+            }, {
+                value: 4252,
+                name: '路口2'
+            }, {
+                value: 4466,
+                name: '路口3'
+            }, {
+                value: 3819,
+                name: '路口4'
+            }, {
+                value: 6283,
+                name: '路口5'
+            }, {
+                value: 4486,
+                name: '路口6'
+            }, {
+                value: 5068,
+                name: '路口7'
+            }, {
+                value: 3320,
+                name: '路口8'
+            }],
+            [{
+                value: 6664,
+                name: '路口1'
+            }, {
+                value: 6219,
+                name: '路口2'
+            }, {
+                value: 7907,
+                name: '路口3'
+            }, {
+                value: 6102,
+                name: '路口4'
+            }, {
+                value: 5786,
+                name: '路口5'
+            }, {
+                value: 5426,
+                name: '路口6'
+            }, {
+                value: 7534,
+                name: '路口7'
+            }, {
+                value: 4890,
+                name: '路口8'
+            }],
+            [{
+                value: 4436,
+                name: '路口1'
+            }, {
+                value: 4710,
+                name: '路口2'
+            }, {
+                value: 6101,
+                name: '路口3'
+            }, {
+                value: 5194,
+                name: '路口4'
+            }, {
+                value: 4614,
+                name: '路口5'
+            }, {
+                value: 4978,
+                name: '路口6'
+            }, {
+                value: 7312,
+                name: '路口7'
+            }, {
+                value: 5015,
+                name: '路口8'
+            }],
+            [{
+                value: 3195,
+                name: '路口1'
+            }, {
+                value: 3613,
+                name: '路口2'
+            }, {
+                value: 5114,
+                name: '路口3'
+            }, {
+                value: 4204,
+                name: '路口4'
+            }, {
+                value: 3402,
+                name: '路口5'
+            }, {
+                value: 3873,
+                name: '路口6'
+            }, {
+                value: 6236,
+                name: '路口7'
+            }, {
+                value: 4196,
+                name: '路口8'
+            }],
+            [{
+                value: 3636,
+                name: '路口1'
+            }, {
+                value: 4326,
+                name: '路口2'
+            }, {
+                value: 6062,
+                name: '路口3'
+            }, {
+                value: 4357,
+                name: '路口4'
+            }, {
+                value: 3620,
+                name: '路口5'
+            }, {
+                value: 4521,
+                name: '路口6'
+            }, {
+                value: 7174,
+                name: '路口7'
+            }, {
+                value: 4161,
+                name: '路口8'
+            }],
+            [{
+                value: 3317,
+                name: '路口1'
+            }, {
+                value: 4326,
+                name: '路口2'
+            }, {
+                value: 6154,
+                name: '路口3'
+            }, {
+                value: 4157,
+                name: '路口4'
+            }, {
+                value: 3317,
+                name: '路口5'
+            }, {
+                value: 4234,
+                name: '路口6'
+            }, {
+                value: 6426,
+                name: '路口7'
+            }, {
+                value: 3405,
+                name: '路口8'
+            }],
+            [{
+                value: 3366,
+                name: '路口1'
+            }, {
+                value: 3795,
+                name: '路口2'
+            }, {
+                value: 5639,
+                name: '路口3'
+            }, {
+                value: 4202,
+                name: '路口4'
+            }, {
+                value: 3363,
+                name: '路口5'
+            }, {
+                value: 3959,
+                name: '路口6'
+            }, {
+                value: 6589,
+                name: '路口7'
+            }, {
+                value: 3949,
+                name: '路口8'
+            }],
+            [{
+                value: 3469,
+                name: '路口1'
+            }, {
+                value: 4100,
+                name: '路口2'
+            }, {
+                value: 5947,
+                name: '路口3'
+            }, {
+                value: 5065,
+                name: '路口4'
+            }, {
+                value: 3203,
+                name: '路口5'
+            }, {
+                value: 3957,
+                name: '路口6'
+            }, {
+                value: 6373,
+                name: '路口7'
+            }, {
+                value: 3927,
+                name: '路口8'
+            }],
+            [{
+                value: 3979,
+                name: '路口1'
+            }, {
+                value: 4115,
+                name: '路口2'
+            }, {
+                value: 6280,
+                name: '路口3'
+            }, {
+                value: 5102,
+                name: '路口4'
+            }, {
+                value: 3724,
+                name: '路口5'
+            }, {
+                value: 3937,
+                name: '路口6'
+            }, {
+                value: 6566,
+                name: '路口7'
+            }, {
+                value: 3988,
+                name: '路口8'
+            }]
+        ];
+        let xdata4 = [
+            [' 07:00:00', ' 07:05:00', ' 07:10:00', ' 07:15:00', ' 07:20:00', ' 07:25:00', ' 07:30:00', ' 07:35:00', ' 07:40:00', ' 07:45:00', ' 07:50:00', ' 07:55:00'],
+            [' 08:00:00', ' 08:05:00', ' 08:10:00', ' 08:15:00', ' 08:20:00', ' 08:25:00', ' 08:30:00', ' 08:35:00', ' 08:40:00', ' 08:45:00', ' 08:50:00', ' 08:55:00'],
+            [' 09:00:00', ' 09:05:00', ' 09:10:00', ' 09:15:00', ' 09:20:00', ' 09:25:00', ' 09:30:00', ' 09:35:00', ' 09:40:00', ' 09:45:00', ' 09:50:00', ' 09:55:00'],
+            [' 10:00:00', ' 10:05:00', ' 10:10:00', ' 10:15:00', ' 10:20:00', ' 10:25:00', ' 10:30:00', ' 10:35:00', ' 10:40:00', ' 10:45:00', ' 10:50:00', ' 10:55:00'],
+            [' 11:00:00', ' 11:05:00', ' 11:10:00', ' 11:15:00', ' 11:20:00', ' 11:25:00', ' 11:30:00', ' 11:35:00', ' 11:40:00', ' 11:45:00', ' 11:50:00', ' 11:55:00'],
+            [' 12:00:00', ' 12:05:00', ' 12:10:00', ' 12:15:00', ' 12:20:00', ' 12:25:00', ' 12:30:00', ' 12:35:00', ' 12:40:00', ' 12:45:00', ' 12:50:00', ' 12:55:00'],
+            [' 13:00:00', ' 13:05:00', ' 13:10:00', ' 13:15:00', ' 13:20:00', ' 13:25:00', ' 13:30:00', ' 13:35:00', ' 13:40:00', ' 13:45:00', ' 13:50:00', ' 13:55:00'],
+            [' 14:00:00', ' 14:05:00', ' 14:10:00', ' 14:15:00', ' 14:20:00', ' 14:25:00', ' 14:30:00', ' 14:35:00', ' 14:40:00', ' 14:45:00', ' 14:50:00', ' 14:55:00'],
+            [' 15:00:00', ' 15:05:00', ' 15:10:00', ' 15:15:00', ' 15:20:00', ' 15:25:00', ' 15:30:00', ' 15:35:00', ' 15:40:00', ' 15:45:00', ' 15:50:00', ' 15:55:00']
+        ];
+        let data4 = [
+            [
+                [282, 291, 281, 306, 326, 336, 353, 327, 359, 339, 316, 408],
+                [48, 72, 53, 44, 31, 38, 52, 69, 54, 70, 63, 79],
+                [92, 89, 84, 89, 85, 106, 125, 101, 95, 85, 89, 81],
+                [11, 27, 8, 3, 1, 2, 8, 4, 11, 10, 4, 5],
+                [11, 10, 9, 9, 5, 3, 14, 6, 4, 7, 12, 4],
+                [4, 6, 4, 3, 3, 4, 1, 3, 4, 1, 7, 3]
+            ],
+            [
+                [397, 368, 500, 478, 539, 456, 501, 609, 401, 594, 502, 474],
+                [64, 60, 69, 77, 76, 104, 114, 112, 82, 98, 116, 113],
+                [90, 83, 107, 102, 143, 103, 90, 94, 107, 124, 170, 87],
+                [5, 10, 6, 10, 9, 11, 6, 13, 11, 2, 6, 6, 9, 6],
+                [3, 13, 6, 5, 10, 7, 8, 9, 1, 8, 12, 8],
+                [2, 13, 2, 1, 3, 6, 6, 4, 9, 3, 3, 1]
+            ],
+            [
+                [496, 359, 369, 410, 363, 374, 366, 309, 306, 312, 303, 277],
+                [68, 51, 98, 59, 69, 74, 80, 78, 59, 71, 70, 89],
+                [98, 90, 72, 71, 67, 52, 50, 74, 48, 54, 50, 49],
+                [9, 6, 14, 10, 23, 7, 12, 17, 11, 11, 8, 13],
+                [3, 3, 5, 3, 9, 2, 11, 7, 12, 4, 8, 11, 8, 11],
+                [1, 1, 2, 4, 5, 2, 5, 4, 1, 2, 7, 6]
+            ],
+            [
+                [284, 283, 314, 299, 275, 283, 275, 280, 257, 218, 263, 268],
+                [60, 49, 45, 56, 66, 65, 54, 42, 39, 66, 44, 69],
+                [59, 39, 73, 61, 32, 44, 59, 68, 49, 50, 54, 76],
+                [4, 23, 3, 5, 8, 12, 5, 5, 12, 8, 9, 10],
+                [8, 11, 9, 9, 6, 14, 4, 5, 16, 4, 7, 9],
+                [8, 4, 7, 4, 10, 4, 7, 2, 7, 3, 7, 8]
+            ],
+            [
+                [279, 264, 300, 336, 353, 369, 349, 336, 303, 344, 347, 309],
+                [70, 64, 47, 74, 103, 87, 91, 119, 134, 122, 148, 133],
+                [80, 72, 96, 76, 101, 110, 87, 107, 106, 90, 135, 91],
+                [13, 18, 6, 5, 5, 4, 24, 17, 15, 19, 8, 8],
+                [13, 8, 8, 9, 15, 5, 17, 10, 14, 8, 5, 8],
+                [7, 7, 3, 8, 2, 4, 11, 9, 6, 4, 7, 8]
+            ],
+            [
+                [301, 323, 302, 342, 344, 328, 314, 276, 275, 297, 321, 301],
+                [161, 158, 96, 117, 108, 82, 151, 123, 88, 108, 121, 143],
+                [98, 103, 100, 90, 58, 68, 47, 50, 71, 73, 52, 57],
+                [3, 4, 4, 10, 3, 4, 7, 8, 6, 8, 9, 9],
+                [6, 2, 7, 6, 3, 8, 5, 7, 7, 4, 8, 12],
+                [4, 6, 7, 8, 2, 0, 5, 1, 3, 1, 6, 5]
+            ],
+            [
+                [328, 291, 316, 288, 280, 346, 272, 330, 295, 320, 258, 313],
+                [109, 130, 134, 95, 74, 75, 63, 96, 77, 98, 78, 73],
+                [80, 58, 70, 67, 55, 60, 49, 54, 61, 70, 59, 58],
+                [4, 6, 8, 8, 6, 8, 3, 6, 7, 17, 21, 15],
+                [12, 8, 6, 6, 8, 12, 4, 7, 5, 11, 16, 13],
+                [9, 4, 5, 7, 5, 6, 4, 4, 5, 9, 5, 4]
+            ],
+            [
+                [347, 342, 296, 289, 316, 275, 339, 308, 290, 356, 381, 402],
+                [87, 79, 72, 109, 64, 47, 40, 56, 53, 64, 53, 40],
+                [35, 57, 42, 44, 54, 59, 42, 35, 42, 56, 37, 41],
+                [23, 4, 8, 6, 8, 6, 12, 3, 10, 7, 13, 14],
+                [12, 9, 8, 9, 14, 8, 10, 6, 10, 9, 9, 9],
+                [1, 6, 7, 3, 4, 3, 2, 8, 9, 1, 2, 3]
+            ],
+            [
+                [350, 354, 309, 294, 363, 294, 293, 300, 373, 346, 347, 352],
+                [63, 58, 73, 79, 80, 64, 62, 51, 68, 83, 71, 75],
+                [38, 50, 60, 41, 57, 48, 53, 70, 58, 51, 58, 44],
+                [12, 5, 1, 3, 7, 10, 6, 12, 13, 8, 4, 3],
+                [8, 6, 14, 7, 5, 13, 7, 9, 9, 3, 4, 6],
+                [3, 3, 6, 5, 11, 5, 10, 8, 3, 2, 4, 2]
+            ]
+        ];
+
+        let chuxing3 = ['公交车', '公交车', '行人', '行人', '公交车', '公交车', '行人', '行人', '行人'];
+        let chuxing4 = ['行人', '行人', '公交车', '公交车', '行人', '行人', '公交车', '公交车', '公交车'];
+        let chuxingv1 = [42604, 42032, 41604, 42606, 40533, 42489, 40842, 43620, 42680];
+        let chuxingv2 = [37050, 37602, 37101, 37067, 33996, 37032, 37091, 37101, 37065];
+        let chuxingv3 = [17340, 16690, 18736, 20648, 17060, 17330, 19757, 18728, 18602];
+        let chuxingv4 = [16730, 15708, 17360, 17220, 16701, 15823, 17220, 17480, 15320];
+        let chart7juc = ['路口1', '路口1、4', '路口1、2、3', '路口8', '路口8', '路口2、3', '路口2、3', '路口8'];
+        let chart7time = ['7:00', '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'];
+
+        // 交通流量折线图
+        function mychart4(time) {
+            myChart4.resize()
+            var time1 = parseInt(time.substr(-1));
+            var data_4 = data4[time1 - 1];
+            var xdata_4 = xdata4[time1 - 1];
+            option4 = {
+                tooltip: {
+                    trigger: 'axis'
+                },
+                color: ['#5723ff',
+                    '#784de3',
+                    '#b973e7',
+                    '#b09aef',
+                                    '#dcbcf8',
+                                    '#F4F3F6'
+                ],
+                legend: {
+                    x: 'left',
+ // 自定义 Legend 的宽度和高度
+    itemWidth: 20,// 设置每个小块的宽度和高度
+    itemheight: 25,
+                    color: ['#5723ff',
+                    '#784de3',
+                    '#b973e7',
+                    '#b09aef',
+                                    '#dcbcf8',
+                                    '#F4F3F6'
+                ],
+                    data: ['小型车辆', '行人', '非机动车', '卡车', '客车', '手推、三轮车'],
+                    name: '时间',
+                    textStyle: { //图例文字的样式
+                        color: '#fff',
+  fontSize: 15,
+                    },
+
+                    icon:'roundRect'
+                },
+                grid: {
+                    left: '1%',
+                    right: '4%',
+                    bottom: '2%',
+                    containLabel: true
+                },
+                toolbox: {
+                    feature: {
+                        saveAsImage: {}
+                    }
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    axisLabel: {
+                        textStyle: {
+                            color: '#ffffff'
+                        }
+                    },splitLine: {
+            show: false,
+            lineStyle: {
+              color: ['rgba(195,221,245,0.4)'],
+              width: 1,
+              type: 'dashed'
+            }
+          },
+
+                    name: '时间', //x轴名称
+                    nameTextStyle: { //x坐标轴名称的字体样式
+                        color: "#fff",
+                    },
+                    data: xdata_4
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '数量', //x轴名称
+                    nameTextStyle: { //x坐标轴名称的字体样式
+                        color: "#fff",
+                    },
+                    axisLabel: {
+                        textStyle: {
+                            color: '#ffffff'
+                        }
+                    },
+                             // 控制网格线是否显示
+            splitLine: {
+                 show: true,
+                 //  改变轴线颜色
+                 lineStyle: {
+                      width: 0.5,
+                     // 使用深浅的间隔色
+                     color: ['#6deff3']
+                 }
+             },
+            //设置轴线的属性
+            axisLine:{
+                 lineStyle:{
+                     color:'#78c2ff',
+                 }
+             }
+              }
+                ,
+                series: [{
+                    name: '小型车辆',
+                    type: 'line',
+                    data: data_4[0],
+                    symbol: "pin",
+                    // 设置折点大小
+                    symbolSize: 12,
+                    // 设置为光滑曲线
+                    smooth: true,
+                    lineStyle: {
+                        color: '#5723ff',
+                        shadowBlur: 8, // 折线模糊
+                         shadowColor: 'rgba(102,219,255,0.4)' //折线颜色
+                    },
+                    itemStyle:{
+              normal:{
+                label : {
+                show: true // 在折线拐点上显示数据
+                }
+              }
+            }
+                }, {
+                    name: '行人',
+                    type: 'line',
+                    data: data_4[1],
+                    // 设置折点大小
+                    symbol: "diamond",
+                    symbolSize: 8,
+                    // 设置为光滑曲线
+                    smooth: true,
+                    lineStyle: {
+                        color: '#784de3',
+                         shadowBlur: 8, // 折线模糊
+                         shadowColor: 'rgba(194,102,255,0.4)' //折线颜色
+                    },
+                     itemStyle:{
+              normal:{
+                label : {
+                show: true // 在折线拐点上显示数据
+                }
+              }}
+                }, {
+                    name: '非机动车',
+                    type: 'line',
+                    data: data_4[2],
+                    // 设置折点大小
+                      symbol: "triangle",
+                    symbolSize: 8,
+                    // 设置为光滑曲线
+                    smooth: true,
+                    lineStyle: {
+                        color: '#b973e7',
+                         shadowBlur: 8, // 折线模糊
+                         shadowColor: 'rgba(102,219,255,0.4)' //折线颜色
+                    },
+                      itemStyle:{
+              normal:{
+                label : {
+                show: true // 在折线拐点上显示数据
+                }
+              }}
+                }, {
+                    name: '卡车',
+                    type: 'line',
+                    data: data_4[3],
+                    // 设置折点大小
+                    symbol: "rect",
+                    symbolSize: 8,
+                    // 设置为光滑曲线
+                    smooth: true,
+                    lineStyle: {
+                        color: '#b09aef',
+                         shadowBlur: 8, // 折线模糊
+                         shadowColor: 'rgba(102,219,255,0.4)' //折线颜色
+                    },
+                      itemStyle:{
+              normal:{
+                label : {
+                show: true // 在折线拐点上显示数据
+                }
+              }}
+                }, {
+                    name: '客车',
+                    type: 'line',
+                    data: data_4[4],
+                    // 设置折点大小
+                    symbolSize: 5,
+                    // 设置为光滑曲线
+                    smooth: true,
+                    lineStyle: {
+                        color: '#dcbcf8',
+                         shadowBlur: 8, // 折线模糊
+                         shadowColor: 'rgba(102,219,255,0.4)' //折线颜色
+                    },
+                      itemStyle:{
+              normal:{
+                label : {
+                show: true // 在折线拐点上显示数据
+                }
+              }}
+                }, {
+                    name: '手推、三轮车',
+                    type: 'line',
+                    data: data_4[5],
+                    // 设置折点大小
+                     symbol: "arrow",
+                    symbolSize: 8,
+                    // 设置为光滑曲线
+                    smooth: true,
+                    lineStyle: {
+                        color: '#F4F3F6',
+                         shadowBlur: 8, // 折线模糊
+                         shadowColor: 'rgba(102,219,255,0.4)' //折线颜色
+                    },
+
+                }]
+            };
+            myChart4.setOption(option4);
+            //myChart1.setOption(option1);
+        }
+        // 路口违规次数统计
+        function mychart3(time) {
+            var time1 = parseInt(time.substr(-1));
+            var data_3 = data3[time1 - 1];
+            option3 = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                },
+                legend: {
+                    x: 'left',
+                    y: '0',
+                    itemWidth: 10, // 调整图例项的宽度
+                    itemHeight: 10, // 调整图例项的高度
+                    //图例的排列默认属性是：水平或垂直,默认是：水平
+                    orient: 'vertical',
+                    data: ['路口1', '路口2', '路口3', '路口4', '路口5', '路口6', '路口7', '路口8'],
+                    textStyle: { //图例文字的样式
+                        color: '#fff',
+                        fontSize: 13
+                    }
+                },
+                toolbox: {
+                    show: true,
+                    feature: {
+                        mark: {
+                            show: true
+                        },
+                        dataView: {
+                            show: true,
+                            readOnly: false
+                        },
+                        restore: {
+                            show: true
+                        },
+                        saveAsImage: {
+                            show: true
+                        }
+                    }
+                },
+                series: [{
+                    name: '行为占比',
+                    type: 'pie',
+                    radius: [20, 70],
+                    center: ['55%', '45%'],
+                    roseType: 'area',
+                    itemStyle: {
+                        borderRadius: 1,
+                        normal: {
+                            color: function(colors) {
+                                var colorList = [
+                                   '#3306a1',
+                    '#2f41ff',
+                    '#5723ff',
+                    '#784de3',
+                    '#b973e7',
+                    '#b09aef',
+                                    '#dcbcf8',
+                                    '#F4F3F6'
+                                ];
+                                return colorList[colors.dataIndex];
+                            }
+                        }
+                    },
+                    data: data_3
+                }]
+            };
+            myChart3.setOption(option3);
+            window.addEventListener('resize', function() {
+                // 改变图表尺寸，在容器大小发生改变时需要手动调用
+                myChart3.resize();
+            });
+        }
+        // 雷达图
+        function mychart2(time) {
+            var time1 = parseInt(time.substr(-1));
+            var data_2 = data2[time1 - 1];
+            option2 = {
+                legend: {
+                    orient: 'vertical',
+                    x: 'left',
+                    fontSize: 10,
+                    textStyle: { //图例文字的样式
+                        color: '#fff',
+                        opacity:1,
+                        fontsize:14
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                radar: {
+
+                    name: { //修改indicator文字的颜色
+                        textStyle: {
+                            color: "#fff"
+                        },
+                        fontSize: 10,
+                        fontWeight: 2
+                    },
+
+                    textStyle: {
+                        color: '#fff',
+                        opacity:1
+                    },
+                    indicator: [{
+                        name: '非机动车和行人异常',
+                        max: 120
+                    }, {
+                        name: '超速',
+                        max: 700
+                    }, {
+                        name: '占用公交车道',
+                        max: 12000
+                    }, {
+                        name: '车辆变道',
+                        max: 500
+                    }, {
+                        name: '占用非机动车道',
+                        max: 50
+                    }, {
+                        name: '车辆逆行',
+                        max: 200
+                    }],
+                    splitArea: { // 坐标轴在 grid 区域中的分隔区域，默认不显示。
+                        show: true,
+                        areaStyle: { // 分隔区域的样式设置。
+                            color: 'rgba(255,255,255,0.1)' // 分隔区域颜色。分隔区域会按数组中颜色的顺序依次循环设置颜色。默认是一个深浅的间隔色。
+                        },
+                        textStyle: {
+                            color: '#fff'
+                        },
+                        fontWeight: 600
+                    },
+                    radius: 70
+                },
+                grid: {
+                    left: '35%', // 调整左边距
+                    right: '5%', // 调整右边距
+                    top: '5%', // 调整顶部距离
+                    bottom: '5%', // 调整底部距离
+                    containLabel: true
+                },
+                series: [{
+                    name: '事故雷达图',
+                    type: 'radar',
+                    tooltip: {
+                        trigger: 'item'
+                    },
+
+                    data: data_2
+                }]
+            };
+            myChart2.setOption(option2);
+        }
+        //交通对象统计
+        function mychart1(time) {
+            var time1 = parseInt(time.substr(-1));
+            var data_1 = data1[time1 - 1];
+
+            //配置及数据
+            option1 = {
+                legend: {
+                    orient: 'vertical',
+                    x: 'left',
+                    data: ['小型车辆', '行人', '非机动车', '卡车', '客车', '人力车'],
+
+                    textStyle: { //图例文字的样式
+                        color: '#fff',fontsize: 18,
+                        opacity:1
+                    }
+                },
+                tooltip: {},
+                title: {
+                    text: "总量:" + String(chart1allnumber[time1 - 1]),
+                    x: 470,
+                    textAlign: 'right',
+                    fontSize: 1,
+                    textStyle: { //图例文字的样式
+                        color: '#fff',
+
+                    }
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '60%'],
+                    itemStyle: {
+                        normal: {
+
+                            color: function(colors) {
+                                var colorList = [
+                                 '#5723ff',
+                    '#784de3',
+                    '#b973e7',
+                    '#b09aef',
+                                    '#dcbcf8',
+                                    '#F4F3F6'
+                                ];
+                                return colorList[colors.dataIndex];
+                            }
+                        }
+                    },
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '20',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    data: data_1
+                }]
+            };
+            myChart1.setOption(option1);
+        }
+
+        function onChange(time) {
+            var time1 = parseInt(time.substr(-1));
+            var allnumber = document.getElementById('allnumber')
+            var carnumber = document.getElementById('carnumber')
+            var notcarnumber = document.getElementById('nocarnumber')
+            var box3 = document.getElementById('box3')
+            var box4 = document.getElementById('box4')
+            var box1_d = document.getElementById('box1_d')
+            var box2_d = document.getElementById('box2_d')
+            var box3_d = document.getElementById('box3_d')
+            var box4_d = document.getElementById('box4_d')
+            var jam_juc = document.getElementById('jam_juc')
+            var jam_time = document.getElementById('jam_time')
+            var imageall = document.getElementById('img1')
+            imageall.src = "../static/images/" + time1 + ".png"
+            allnumber.innerText = String(chart1allnumber[time1 - 1])
+            carnumber.innerText = String(chart1carnumber[time1 - 1])
+            notcarnumber.innerText = String(chart1nocarnumber[time1 - 1])
+            box3.innerText = '3.' + chuxing3[time1 - 1] + " " + String(chuxingv3[time1 - 1])
+            box4.innerText = '4.' + chuxing4[time1 - 1] + " " + String(chuxingv4[time1 - 1])
+            box1_d.innerText = String(chuxingv1[time1 - 1])
+            box2_d.innerText = String(chuxingv2[time1 - 1])
+            box3_d.innerText = String(chuxingv3[time1 - 1])
+            box4_d.innerText = String(chuxingv4[time1 - 1])
+            jam_juc.innerText = chart7juc[time1 - 1]
+            jam_time.innerText = chart7time[time1 - 1]
+        }
+              </script>
+<script src="../static/js/index-Cd6LIo9K.js"></script>
+</body>
+</html>
